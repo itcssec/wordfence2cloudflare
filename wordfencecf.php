@@ -184,7 +184,7 @@ function wtc_check_new_blocked_ips() {
 
     $new_ips_count = count($blocked_ips);
     $processed_ips_count = get_option('wtc_processed_ips_count', 0); // Default to 0 if not set
-    if($new_ips_count != $processed_ips_count) {
+    if($blocked_ips) {
         wtc_activate();
     }
 }
