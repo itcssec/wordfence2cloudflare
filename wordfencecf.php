@@ -276,8 +276,9 @@ if ( $cron_event !== false ) {
 }
 
 // Schedule an action if it's not already scheduled
+$blocked_ips = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > {$last_processed_time} AND blockedHits >= {$threshold}", OBJECT );
 $cron_interval = get_option('cron_interval');  // get the cron_interval option, default to 'hourly' if not set
-if ( ! wp_next_scheduled( 'wtc_add_ips_to_cloudflare' ) ) {
+if ( ! wp_next_scheduled( 'wtc_add_ips_to_cloudflare' &&  $blocked_ips) ) {
     wp_schedule_event( time(), $cron_interval, 'wtc_add_ips_to_cloudflare' );
 }
 
