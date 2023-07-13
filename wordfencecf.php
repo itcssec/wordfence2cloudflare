@@ -213,6 +213,9 @@ function add_ips_to_cloudflare($blocked_ips) {
     $key = get_option('cloudflare_key');
     $block_scope = get_option('block_scope', 'domain'); // Default to 'domain' if not set
     $zone_id = get_option('cloudflare_zone_id');
+	
+	$timezone = get_option('timezone_string'); // Get the WordPress timezone string
+    $current_datetime = new DateTime('now', new DateTimeZone($timezone)); // Create a DateTime object with the current time
 
     foreach($blocked_ips as $ip) {
         $ip_address = inet_ntop($ip->IP);
@@ -241,7 +244,7 @@ function add_ips_to_cloudflare($blocked_ips) {
                     'target' => 'ip', // This should be 'ip' for both domain specific and entire account.
                     'value' => $ip_address
                 ],
-                'notes' => 'Blocked by WordfenceCloudflare plugin'
+                'notes' => 'Blocked by WordfenceCloudflare plugin' . " " . $current_datetime->format('Y-m-d H:i:s') // Include the current date and time in the notes
             ])
         ]);
 
