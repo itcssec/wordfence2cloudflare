@@ -186,7 +186,9 @@ function wtc_check_new_blocked_ips() {
     $processed_ips_count = get_option('wtc_processed_ips_count', 0); // Default to 0 if not set
     if($blocked_ips) {
         wtc_activate();
-    }
+    }else{
+		error_log("No New Blocked IPs found");
+	}
 }
 
 // Schedule the function to run every 5 minutes
