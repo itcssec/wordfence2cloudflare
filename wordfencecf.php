@@ -215,7 +215,16 @@ function add_ips_to_cloudflare($blocked_ips) {
     $zone_id = get_option('cloudflare_zone_id');
 	
 	$timezone = get_option('timezone_string'); // Get the WordPress timezone string
-    $current_datetime = new DateTime('now', new DateTimeZone($timezone)); // Create a DateTime object with the current time
+	 if (empty($timezone)) {
+			$timezone = 'UTC'; // Set a default timezone if the retrieved value is empty
+		}
+
+		try {
+			$current_datetime = new DateTime('now', new DateTimeZone($timezone));
+		} catch (Exception $e) {
+			error_log('Failed to create DateTime object: ' . $e->getMessage());
+			return;
+		}
 
     foreach($blocked_ips as $ip) {
         $ip_address = inet_ntop($ip->IP);
