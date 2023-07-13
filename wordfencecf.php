@@ -159,22 +159,25 @@ function wtc_activate() {
     $blocked_ips = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > {$last_processed_time} AND blockedHits >= {$threshold}", OBJECT );
 
     $processed_ips_count = count($blocked_ips);
-    if($blocked_ips) {
+    if(blocked_ips) {
         add_ips_to_cloudflare( $blocked_ips );
         update_option('wtc_last_processed_time', time());
         update_option('wtc_processed_ips_count', $processed_ips_count);
     }
-    
-    // Schedule the function to run every 5 minutes if not already scheduled
-    if (!wp_next_scheduled('wtc_check_new_blocked_ips')) {
-        wp_schedule_event(time(), '5min', 'wtc_check_new_blocked_ips');
-    }else{
-		error_log("No New Blocked IPs found");
-	}
-    
+
+    // Schedule the cron job if it's not already scheduled
+    if (!wp_next_scheduled('wtc_add_ips_to_cloudflare')) {
+        $cron_interval = get_option('cron_interval');  // get the cron_interval option, default to 'hourly' if not set
+        wp_schedule_event(time(), $cron_interval, 'wtc_add_ips_to_cloudflare');
+    }
 }
 
+// Hook into the activation of the plugin
 register_activation_hook(__FILE__, 'wtc_activate');
+
+// Hook into the 'wtc_add_ips_to_cloudflare' action that'll fire according to the cron schedule
+add_action('wtc_add_ips_to_cloudflare', 'wtc_activate');
+
 
 
 // Create a function to check new blocked IPs every 5 minutes
@@ -267,26 +270,6 @@ function wtc_run_process_manually() {
     }
 }
 add_action( 'admin_init', 'wtc_run_process_manually' );
-
-
-// Inside your settings save function
-$cron_event = wp_next_scheduled( 'wtc_add_ips_to_cloudflare' );
-if ( $cron_event !== false ) {
-    wp_unschedule_event( $cron_event, 'wtc_add_ips_to_cloudflare' );
-}
-
-// Schedule an action if it's not already scheduled
-$threshold = get_option('blocked_hits_threshold', 1);
-$last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
-$blocked_ips = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > {$last_processed_time} AND blockedHits >= {$threshold}", OBJECT );
-$cron_interval = get_option('cron_interval');  // get the cron_interval option, default to 'hourly' if not set
-if ( ! wp_next_scheduled( 'wtc_add_ips_to_cloudflare' &&  $blocked_ips) ) {
-    wp_schedule_event( time(), $cron_interval, 'wtc_add_ips_to_cloudflare' );
-}
-
-
-// Hook into that action that'll fire every hour
-add_action( 'wtc_add_ips_to_cloudflare', 'wtc_activate' );
 
 
 
