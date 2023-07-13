@@ -159,7 +159,7 @@ function wtc_activate() {
     $blocked_ips = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > {$last_processed_time} AND blockedHits >= {$threshold}", OBJECT );
 
     $processed_ips_count = count($blocked_ips);
-    if($processed_ips_count > 0) {
+    if($blocked_ips) {
         add_ips_to_cloudflare( $blocked_ips );
         update_option('wtc_last_processed_time', time());
         update_option('wtc_processed_ips_count', $processed_ips_count);
