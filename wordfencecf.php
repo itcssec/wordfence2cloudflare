@@ -168,7 +168,9 @@ function wtc_activate() {
     // Schedule the function to run every 5 minutes if not already scheduled
     if (!wp_next_scheduled('wtc_check_new_blocked_ips')) {
         wp_schedule_event(time(), '5min', 'wtc_check_new_blocked_ips');
-    }
+    }else{
+		error_log("No New Blocked IPs found");
+	}
     
 }
 
