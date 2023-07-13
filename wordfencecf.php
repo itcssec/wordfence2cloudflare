@@ -1,9 +1,12 @@
 <?php
 /*
-Plugin Name: Wordfence to Cloudflare
-Description: This plugin takes blocked IPs from Wordfence and adds them to a specified list in Cloudflare.
+Plugin Name: Wordfence2Cloudflare
+Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
 Version: 1.0
 Author: ITCS
+Author URI: https://itcybersecurity.gr/
+License: GPLv2 or later
+Text Domain: wordfence2cloudflare
 */
 
 if ( ! defined( 'ABSPATH' ) ) {
