@@ -173,6 +173,11 @@ function wtc_activate() {
         $cron_interval = get_option('cron_interval');  // get the cron_interval option, default to 'hourly' if not set
         wp_schedule_event(time(), $cron_interval, 'wtc_add_ips_to_cloudflare');
     }
+	
+	// Schedule the function to run every 5 minutes
+	if (!wp_next_scheduled('wtc_check_new_blocked_ips')) {
+		wp_schedule_event(time(), '5min', 'wtc_check_new_blocked_ips');
+	}
 }
 
 // Hook into the activation of the plugin
@@ -181,7 +186,7 @@ register_activation_hook(__FILE__, 'wtc_activate');
 // Hook into the 'wtc_add_ips_to_cloudflare' action that'll fire according to the cron schedule
 add_action('wtc_add_ips_to_cloudflare', 'wtc_activate');
 
-
+add_action('wtc_check_new_blocked_ips', 'wtc_check_new_blocked_ips');
 
 // Create a function to check new blocked IPs every 5 minutes
 function wtc_check_new_blocked_ips() {
@@ -198,13 +203,6 @@ function wtc_check_new_blocked_ips() {
 		error_log("No New Blocked IPs found");
 	}
 }
-
-// Schedule the function to run every 5 minutes
-if (!wp_next_scheduled('wtc_check_new_blocked_ips')) {
-    wp_schedule_event(time(), '5min', 'wtc_check_new_blocked_ips');
-}
-
-add_action('wtc_check_new_blocked_ips', 'wtc_check_new_blocked_ips');
 
 
 // Add the blocked IPs to Cloudflare
