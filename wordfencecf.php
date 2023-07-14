@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.0
+Version: 1.1
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -64,15 +64,12 @@ function wtc_render_admin_page() {
                     <th scope="row">Cron Interval</th>
                     <td>
                         <select name="cron_interval">
+                            <option value="5min" <?php selected( get_option('cron_interval'), '5min' ); ?>>Every 5 Minutes</option>
                             <option value="hourly" <?php selected( get_option('cron_interval'), 'hourly' ); ?>>1 hour</option>
                             <option value="twicedaily" <?php selected( get_option('cron_interval'), 'twicedaily' ); ?>>12 hours</option>
                             <option value="daily" <?php selected( get_option('cron_interval'), 'daily' ); ?>>24 hours</option>
                         </select>
                     </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Run Process Manually</th>
-                    <td><button type="submit" name="wtc_run_process" class="button button-primary">Run Process</button></td>
                 </tr>
             </table>
 
@@ -89,6 +86,11 @@ function wtc_render_admin_page() {
 
             <?php submit_button(); ?>
         </form>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php?action=wtc_run_process')); ?>">
+            <?php wp_nonce_field('wtc_run_process_action', 'wtc_run_process_nonce'); ?>
+            <button type="submit" name="wtc_run_process" class="button button-primary">Run Process</button>
+        </form>
+        <br></br>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <?php wp_nonce_field('wtc_clear_data_action', 'wtc_clear_data_nonce'); ?>
             <input type="hidden" name="action" value="wtc_clear_data">
@@ -140,6 +142,7 @@ function wtc_handle_option_update() {
 }
 
 add_action('admin_enqueue_scripts', 'wtc_handle_option_update');
+
 // Update wp-config.php on settings update
 function update_wp_config_on_save( $option_name ) {
     // If the updated options are 'cloudflare_email' or 'cloudflare_key', update the wp-config.php file
@@ -148,60 +151,78 @@ function update_wp_config_on_save( $option_name ) {
             wtc_update_wp_config( get_option('cloudflare_email'), get_option('cloudflare_key') );
         }
     }
+
+    // If the updated option is 'cron_interval', reschedule the cron event
+    if ( 'cron_interval' == $option_name ) {
+        // Unschedule the previous cron event if it exists
+        wp_clear_scheduled_hook('wtc_check_new_blocked_ips');
+
+        // Schedule the cron job with the new interval
+        $cron_interval = get_option('cron_interval');
+        if (!empty($cron_interval)) {
+            wp_schedule_event(time(), $cron_interval, 'wtc_check_new_blocked_ips');
+        }
+    }
 }
 add_action( 'updated_option', 'update_wp_config_on_save' );
 
 
 
 
+
 // The function that will run when the plugin is activated
 function wtc_activate() {
-    global $wpdb;
-    $threshold = get_option('blocked_hits_threshold', 1);
-    $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
-    $blocked_ips = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > {$last_processed_time} AND blockedHits >= {$threshold}", OBJECT );
+	
+	// Unschedule the previous cron event if it exists
+    wp_clear_scheduled_hook('wtc_check_new_blocked_ips');
 
-    $processed_ips_count = count($blocked_ips);
-    if($blocked_ips) {
-        add_ips_to_cloudflare( $blocked_ips );
-        update_option('wtc_last_processed_time', time());
-        update_option('wtc_processed_ips_count', $processed_ips_count);
-    }
-
-    // Schedule the cron job if it's not already scheduled
-    if (!wp_next_scheduled('wtc_add_ips_to_cloudflare')) {
-        $cron_interval = get_option('cron_interval');  // get the cron_interval option, default to 'hourly' if not set
-        wp_schedule_event(time(), $cron_interval, 'wtc_add_ips_to_cloudflare');
+    // Schedule the cron job with the new interval
+    $cron_interval = get_option('cron_interval');
+    if (!empty($cron_interval)) {
+        wp_schedule_event(time(), $cron_interval, 'wtc_check_new_blocked_ips');
     }
 	
 	// Schedule the function to run every 5 minutes
-	if (!wp_next_scheduled('wtc_check_new_blocked_ips')) {
-		wp_schedule_event(time(), '5min', 'wtc_check_new_blocked_ips');
-	}
+	//if (!wp_next_scheduled('wtc_check_new_blocked_ips')) {
+	//	wp_schedule_event(time(), '5min', 'wtc_check_new_blocked_ips');
+	//}
 }
 
 // Hook into the activation of the plugin
 register_activation_hook(__FILE__, 'wtc_activate');
 
 // Hook into the 'wtc_add_ips_to_cloudflare' action that'll fire according to the cron schedule
-add_action('wtc_add_ips_to_cloudflare', 'wtc_activate');
+//add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
 
 add_action('wtc_check_new_blocked_ips', 'wtc_check_new_blocked_ips');
 
 // Create a function to check new blocked IPs every 5 minutes
 function wtc_check_new_blocked_ips() {
     global $wpdb;
-    $threshold = get_option('blocked_hits_threshold', 1);
-    $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
-    $blocked_ips = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > {$last_processed_time} AND blockedHits >= {$threshold}", OBJECT );
+        $threshold = get_option('blocked_hits_threshold', 1);
+        $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
 
-    $new_ips_count = count($blocked_ips);
-    $processed_ips_count = get_option('wtc_processed_ips_count', 0); // Default to 0 if not set
-    if($blocked_ips) {
-        wtc_activate();
-    }else{
-		error_log("No New Blocked IPs found");
-	}
+        // Convert last processed time to the same format as the blockedTime column
+        $last_processed_time_formatted = date('Y-m-d H:i:s', $last_processed_time);
+
+        $blocked_ips = $wpdb->get_results(
+            "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > UNIX_TIMESTAMP('{$last_processed_time_formatted}') AND blockedHits >= {$threshold}",
+            OBJECT
+        );
+
+        error_log("SQL Query: " . $wpdb->last_query);
+
+        // Run the process
+        $processed_ips_count = count($blocked_ips);
+        if($blocked_ips) {
+            error_log("Blocked IPs: " . print_r($blocked_ips, true)); // Debug statement
+            add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
+            update_option('wtc_last_processed_time', time());
+            update_option('wtc_processed_ips_count', $processed_ips_count);
+        }else{
+            error_log("No New Blocked IPs Found");
+        }
+
 }
 
 
@@ -269,20 +290,43 @@ function add_ips_to_cloudflare($blocked_ips) {
 }
 
 
-add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
+//add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
 
 
 function wtc_run_process_manually() {
-    // Check if our custom button is clicked
     if ( isset( $_POST['wtc_run_process'] ) ) {
+        global $wpdb;
+        $threshold = get_option('blocked_hits_threshold', 1);
+        $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
+
+        // Convert last processed time to the same format as the blockedTime column
+        $last_processed_time_formatted = date('Y-m-d H:i:s', $last_processed_time);
+
+        $blocked_ips = $wpdb->get_results(
+            "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > UNIX_TIMESTAMP('{$last_processed_time_formatted}') AND blockedHits >= {$threshold}",
+            OBJECT
+        );
+
+        error_log("SQL Query: " . $wpdb->last_query);
+
         // Run the process
-        wtc_activate();
+        $processed_ips_count = count($blocked_ips);
+        if($blocked_ips) {
+            error_log("Blocked IPs: " . print_r($blocked_ips, true)); // Debug statement
+            add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
+            update_option('wtc_last_processed_time', time());
+            update_option('wtc_processed_ips_count', $processed_ips_count);
+        }else{
+            error_log("No New Blocked IPs Found");
+        }
+
         // Then redirect back to prevent form resubmission on refresh
         wp_redirect( add_query_arg( 'page', 'wtc-settings', admin_url( 'options-general.php' ) ) );
         exit;
     }
 }
-add_action( 'admin_init', 'wtc_run_process_manually' );
+add_action( 'admin_post_wtc_run_process', 'wtc_run_process_manually' );
+
 
 
 
