@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Wordfence2Cloudflare
-Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
+Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list. <a href="<?php echo admin_url('options-general.php?page=wtc-settings'); ?>">Go to Settings</a>
 Version: 1.2
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
