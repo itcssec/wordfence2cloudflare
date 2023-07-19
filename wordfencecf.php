@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.1
+Version: 1.2
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -12,6 +12,120 @@ Text Domain: wordfence2cloudflare
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+
+// Check if the custom table exists and create it if not
+function wtc_check_custom_table() {
+	global $wpdb;
+
+	$table_name = $wpdb->prefix . 'wtc_blocked_ips';
+
+	if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+		wtc_create_custom_table();
+	}
+}
+add_action('init', 'wtc_check_custom_table');
+
+// Create custom table during plugin activation
+function wtc_create_custom_table() {
+	global $wpdb;
+    $charset_collate = $wpdb->get_charset_collate(); 
+
+	$table_name = $wpdb->prefix . 'wtc_blocked_ips';
+
+	if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+		$sql = "CREATE TABLE $table_name (
+			id INT(11) NOT NULL AUTO_INCREMENT,
+			blockedTime DATETIME NOT NULL,
+			blockedHits INT(11) NOT NULL,
+			ip VARCHAR(45) NOT NULL,
+			countryCode VARCHAR(2) NOT NULL,
+			countryName VARCHAR(64) NOT NULL,
+			whoisEntry TEXT NOT NULL,
+			wafStatus TEXT NOT NULL,
+			cfResponse TEXT NOT NULL,
+			isSent TINYINT(1) NOT NULL DEFAULT '0',
+			PRIMARY KEY (id)
+		) $charset_collate;";
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta($sql);
+	}
+}
+register_activation_hook(__FILE__, 'wtc_create_custom_table');
+
+
+// Fetch blocked IPs from Wordfence and add them to the custom table
+function wtc_fetch_and_store_blocked_ips() {
+	global $wpdb;
+
+	$table_name = $wpdb->prefix . 'wtc_blocked_ips';
+	$threshold = get_option('blocked_hits_threshold', 1);
+
+	$blocked_ips = $wpdb->get_results(
+		"SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedHits >= {$threshold}",
+		OBJECT
+	);
+
+	if ($blocked_ips) {
+		foreach ($blocked_ips as $ip) {
+			$ip_address = inet_ntop($ip->IP);
+			if (filter_var($ip_address, FILTER_VALIDATE_IP) === false) {
+				error_log('Invalid IP address: ' . $ip_address);
+				continue;
+			}
+			 // Check if the IP address already exists in the table
+        $existing_ip = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM $table_name WHERE ip = %s", $ip_address)
+        );
+        
+        if ($existing_ip) {
+            // IP already exists, skip inserting a new record
+            continue;
+        }else{
+
+			$wpdb->insert(
+				$table_name,
+				array(
+					'blockedTime' => date('Y-m-d H:i:s', $ip->blockedTime),
+					'blockedHits' => $ip->blockedHits,
+					'ip' => $ip_address,
+					'cfResponse' => '',
+					'isSent' => 0,
+				),
+				array(
+					'%s',
+					'%d',
+					'%s',
+					'%s',
+					'%s',
+					'%s',
+					'%s',
+					'%s',
+					'%d',
+				)
+			);
+		}
+		}
+	}
+}
+add_action('wtc_check_new_blocked_ips', 'wtc_fetch_and_store_blocked_ips');
+
+// Update Cloudflare response in the custom table
+function wtc_update_cloudflare_response($ip_id, $cf_response) {
+	global $wpdb;
+
+	$table_name = $wpdb->prefix . 'wtc_blocked_ips';
+
+	$wpdb->update(
+		$table_name,
+		array('cfResponse' => $cf_response),
+		array('id' => $ip_id),
+		array('%s'),
+		array('%d')
+	);
+}
+
+
 function wtc_menu() {
     add_options_page(
         'WTC Settings', 
@@ -20,12 +134,67 @@ function wtc_menu() {
         'wtc-settings', 
         'wtc_render_admin_page'
     );
+  
 }
 add_action('admin_menu', 'wtc_menu');
 
-// Create the admin page
+// Render Blocked IPs Tab
+function wtc_render_ips_tab() {
+    // Check if the user has the required capability
+    if (!current_user_can('manage_options')) {
+        wp_die('Access is not allowed.');
+    }
+
+    // Include the necessary file to render the IPs table
+    include_once plugin_dir_path(__FILE__) . 'wtcipstable.php';
+    wtc_render_ips_tab_content();
+}
+
+
+
 // Create the admin page
 function wtc_render_admin_page() {
+    // Check if the user has the required capability
+    if (!current_user_can('manage_options')) {
+        wp_die('Access is not allowed.');
+    }
+
+    ?>
+    <div class="wrap">
+        <h1>Wordfence to Cloudflare</h1>
+
+        <!-- Add Tabs -->
+        <h2 class="nav-tab-wrapper">
+            <a href="?page=wtc-settings" class="nav-tab <?php echo (isset($_GET['page']) && $_GET['page'] === 'wtc-settings') ? 'nav-tab-active' : ''; ?>">Settings</a>
+            <a href="?page=wtc-settings&tab=wtc-ips" class="nav-tab <?php echo (isset($_GET['page']) && $_GET['tab'] === 'wtc-ips') ? 'nav-tab-active' : ''; ?>">Blocked IPs</a>
+        </h2>
+
+        <!-- Display Tab Content -->
+        <?php
+        $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'wtc-settings';
+
+        switch ($active_tab) {
+            case 'wtc-ips':
+                // Render the blocked IPs tab content
+                wtc_render_ips_tab();
+                break;
+
+            default:
+                // Render the settings tab content
+                wtc_render_settings_tab();
+                break;
+        }
+        ?>
+    </div>
+    <?php
+}
+
+
+
+
+
+// Create the admin page
+function wtc_render_settings_tab() {
     ?>
     <div class="wrap">
         <h1>Wordfence to Cloudflare</h1>
@@ -199,6 +368,7 @@ add_action('wtc_check_new_blocked_ips', 'wtc_check_new_blocked_ips');
 // Create a function to check new blocked IPs every 5 minutes
 function wtc_check_new_blocked_ips() {
     global $wpdb;
+    $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option('blocked_hits_threshold', 1);
         $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
 
@@ -206,9 +376,11 @@ function wtc_check_new_blocked_ips() {
         $last_processed_time_formatted = date('Y-m-d H:i:s', $last_processed_time);
 
         $blocked_ips = $wpdb->get_results(
-            "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > UNIX_TIMESTAMP('{$last_processed_time_formatted}') AND blockedHits >= {$threshold}",
-            OBJECT
-        );
+		"SELECT * FROM $table_name WHERE isSent = 0",
+		OBJECT);//$wpdb->get_results(
+            //"SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > UNIX_TIMESTAMP('{$last_processed_time_formatted}') AND blockedHits >= {$threshold}",
+           // OBJECT
+        //);
 
         error_log("SQL Query: " . $wpdb->last_query);
 
@@ -216,7 +388,7 @@ function wtc_check_new_blocked_ips() {
         $processed_ips_count = count($blocked_ips);
         if($blocked_ips) {
             error_log("Blocked IPs: " . print_r($blocked_ips, true)); // Debug statement
-            add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
+            wtc_add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
             update_option('wtc_last_processed_time', time());
             update_option('wtc_processed_ips_count', $processed_ips_count);
         }else{
@@ -227,15 +399,29 @@ function wtc_check_new_blocked_ips() {
 
 
 // Add the blocked IPs to Cloudflare
-function add_ips_to_cloudflare($blocked_ips) {
-    $email = get_option('cloudflare_email');
-    $key = get_option('cloudflare_key');
-    $block_scope = get_option('block_scope', 'domain'); // Default to 'domain' if not set
-    $zone_id = get_option('cloudflare_zone_id');
-	
-	$timezone = get_option('timezone_string'); // Get the WordPress timezone string
-	 if (empty($timezone)) {
-			$timezone = 'UTC'; // Set a default timezone if the retrieved value is empty
+// Add IPs to Cloudflare
+function wtc_add_ips_to_cloudflare() {
+	global $wpdb;
+
+	$table_name = $wpdb->prefix . 'wtc_blocked_ips';
+	$email = get_option('cloudflare_email');
+	$key = get_option('cloudflare_key');
+	$block_scope = get_option('block_scope', 'domain');
+	$zone_id = get_option('cloudflare_zone_id');
+
+	$ips_to_send = $wpdb->get_results(
+		"SELECT * FROM $table_name WHERE isSent = 0",
+		OBJECT
+	);
+
+	if ($ips_to_send) {
+		$api_url = ($block_scope == 'domain')
+			? "https://api.cloudflare.com/client/v4/zones/{$zone_id}/firewall/access_rules/rules"
+			: "https://api.cloudflare.com/client/v4/user/firewall/access_rules/rules";
+
+		$timezone = get_option('timezone_string');
+		if (empty($timezone)) {
+			$timezone = 'UTC';
 		}
 
 		try {
@@ -245,50 +431,71 @@ function add_ips_to_cloudflare($blocked_ips) {
 			return;
 		}
 
-    foreach($blocked_ips as $ip) {
-        $ip_address = inet_ntop($ip->IP);
-        if(filter_var($ip_address, FILTER_VALIDATE_IP) === false) {
-            error_log('Invalid IP address: ' . $ip_address);
-            continue;
-        }
+		foreach ($ips_to_send as $ip) {
+			$ip_address = $ip->ip;
 
-        if($block_scope == 'domain') {
-            // Domain Specific
-            $api_url = "https://api.cloudflare.com/client/v4/zones/{$zone_id}/firewall/access_rules/rules";
-        } else {
-            // Entire Account
-            $api_url = "https://api.cloudflare.com/client/v4/user/firewall/access_rules/rules";
-        }
+			$response = wp_remote_post($api_url, array(
+				'headers' => array(
+					'X-Auth-Email' => $email,
+					'X-Auth-Key' => $key,
+					'Content-Type' => 'application/json',
+				),
+				'body' => json_encode(array(
+					'mode' => 'block',
+					'configuration' => array(
+						'target' => 'ip',
+						'value' => $ip_address,
+					),
+					'notes' => 'Blocked by WordfenceCloudflare plugin' . " " . $current_datetime->format('Y-m-d H:i:s'),
+				)),
+			));
 
-        $response = wp_remote_post($api_url, [
-            'headers' => [
-                'X-Auth-Email' => $email,
-                'X-Auth-Key' => $key,
-                'Content-Type' => 'application/json'
-            ],
-            'body' => json_encode([
-                'mode' => 'block',
-                'configuration' => [
-                    'target' => 'ip', // This should be 'ip' for both domain specific and entire account.
-                    'value' => $ip_address
-                ],
-                'notes' => 'Blocked by WordfenceCloudflare plugin' . " " . $current_datetime->format('Y-m-d H:i:s') // Include the current date and time in the notes
-            ])
-        ]);
+			if (is_wp_error($response)) {
+				error_log('Failed to create access rule: ' . $response->get_error_message());
+				//continue;
+			}
 
-        if(is_wp_error($response)) {
-            error_log('Failed to create access rule: ' . $response->get_error_message());
-            continue;
-        }
+			$body = json_decode($response['body'], true);
+			
+			if (!empty($body['errors'])) {
+				$error = $body['errors'][0];
+				$responseCode = $error['code'];
+				$responseMessage = $error['message'];
+				if ($responseCode == '10009' && $responseMessage == 'firewallaccessrules.api.duplicate_of_existing') {
+					// You can use the response code as needed
+					error_log('Response Duplicated Code: ' . $responseCode);
+					wtc_update_cloudflare_response($ip->id, $response['body']);
+					// Mark IP as sent
+        			$wpdb->update(
+        				$table_name,
+        				array('isSent' => 1),
+        				array('id' => $ip->id),
+        				array('%d'),
+        				array('%d')
+        			);
+        			continue;
+				}
+				elseif($responseCode != '10009' && $responseMessage != 'firewallaccessrules.api.duplicate_of_existing') {
+				error_log('Failed to create access rule: ' . print_r($body, true));
+				continue;
+			}
+				    
+				
+			}
 
-        $body = json_decode($response['body'], true);
-        if(!isset($body['success']) || !$body['success']) {
-            error_log('Failed to create access rule: ' . print_r($body, true));
-            continue;
-        }
-    }
+			wtc_update_cloudflare_response($ip->id, $response['body']);
+
+			// Mark IP as sent
+			$wpdb->update(
+				$table_name,
+				array('isSent' => 1),
+				array('id' => $ip->id),
+				array('%d'),
+				array('%d')
+			);
+		}
+	}
 }
-
 
 //add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
 
@@ -296,6 +503,7 @@ function add_ips_to_cloudflare($blocked_ips) {
 function wtc_run_process_manually() {
     if ( isset( $_POST['wtc_run_process'] ) ) {
         global $wpdb;
+        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option('blocked_hits_threshold', 1);
         $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
 
@@ -303,9 +511,8 @@ function wtc_run_process_manually() {
         $last_processed_time_formatted = date('Y-m-d H:i:s', $last_processed_time);
 
         $blocked_ips = $wpdb->get_results(
-            "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > UNIX_TIMESTAMP('{$last_processed_time_formatted}') AND blockedHits >= {$threshold}",
-            OBJECT
-        );
+		"SELECT * FROM $table_name WHERE isSent = 0",
+		OBJECT);
 
         error_log("SQL Query: " . $wpdb->last_query);
 
@@ -313,11 +520,11 @@ function wtc_run_process_manually() {
         $processed_ips_count = count($blocked_ips);
         if($blocked_ips) {
             error_log("Blocked IPs: " . print_r($blocked_ips, true)); // Debug statement
-            add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
+            wtc_add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
             update_option('wtc_last_processed_time', time());
             update_option('wtc_processed_ips_count', $processed_ips_count);
         }else{
-            error_log("No New Blocked IPs Found");
+            error_log("No New Blocked IPs Found - Manual Process");
         }
 
         // Then redirect back to prevent form resubmission on refresh
