@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Wordfence2Cloudflare
-Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list. <a href="<?php echo admin_url('options-general.php?page=wtc-settings'); ?>">Go to Settings</a>
+Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
 Version: 1.2
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
@@ -12,6 +12,14 @@ Text Domain: wordfence2cloudflare
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+
+// Add settings link to plugin page
+function wtc_add_settings_link($links) {
+    $settings_link = '<a href="' . admin_url('options-general.php?page=wtc-settings') . '">' . __('Settings') . '</a>';
+    array_push($links, $settings_link);
+    return $links;
+}
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'wtc_add_settings_link');
 
 // Check if the custom table exists and create it if not
 function wtc_check_custom_table() {
