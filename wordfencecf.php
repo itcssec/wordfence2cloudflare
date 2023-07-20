@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.2
+Version: 1.2.1
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -64,23 +64,26 @@ register_activation_hook(__FILE__, 'wtc_create_custom_table');
 
 // Fetch blocked IPs from Wordfence and add them to the custom table
 function wtc_fetch_and_store_blocked_ips() {
-	global $wpdb;
+    global $wpdb;
 
-	$table_name = $wpdb->prefix . 'wtc_blocked_ips';
-	$threshold = get_option('blocked_hits_threshold', 1);
+    $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+    $threshold = get_option('blocked_hits_threshold', 1);
 
-	$blocked_ips = $wpdb->get_results(
-		"SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedHits >= {$threshold}",
-		OBJECT
-	);
+    $blocked_ips = $wpdb->get_results(
+        "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedHits >= {$threshold}",
+        OBJECT
+    );
 
-	if ($blocked_ips) {
-		foreach ($blocked_ips as $ip) {
-			$ip_address = inet_ntop($ip->IP);
-			if (filter_var($ip_address, FILTER_VALIDATE_IP) === false) {
-				error_log('Invalid IP address: ' . $ip_address);
-				continue;
-			}
+    if ($blocked_ips) {
+        foreach ($blocked_ips as $ip) {
+            $ip_address = inet_ntop($ip->IP);
+            // Remove "::ffff:" prefix if present
+            $ip_address = preg_replace('/^::ffff:/', '', $ip_address);
+            
+            if (filter_var($ip_address, FILTER_VALIDATE_IP) === false) {
+                error_log('Invalid IP address: ' . $ip_address);
+                continue;
+            }
 			 // Check if the IP address already exists in the table
         $existing_ip = $wpdb->get_row(
             $wpdb->prepare("SELECT * FROM $table_name WHERE ip = %s", $ip_address)
@@ -594,5 +597,36 @@ function wtc_add_cron_interval( $schedules ) {
     return $schedules;
 }
 add_filter( 'cron_schedules', 'wtc_add_cron_interval' );
+
+function wtc_enqueue_scripts() {
+    // Enqueue jQuery
+    wp_enqueue_script('jquery');
+
+    // Enqueue DataTables library
+    wp_enqueue_script('wtc-datatables', 'https://cdn.datatables.net/v/bs5/dt-1.11.3/datatables.min.js', array('jquery'), '1.11.3');
+
+    // Enqueue DataTables CSS
+    wp_enqueue_style('wtc-datatables-css', 'https://cdn.datatables.net/v/bs5/dt-1.11.3/datatables.min.css', array(), '1.11.3');
+}
+add_action('admin_enqueue_scripts', 'wtc_enqueue_scripts');
+
+// AJAX action to delete blocked IPs
+function wtc_delete_ips() {
+    global $wpdb;
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Access is not allowed.');
+    }
+
+    $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+    $ids = $_POST['ids'];
+
+    // Delete the selected IPs
+    $wpdb->query($wpdb->prepare("DELETE FROM $table_name WHERE id IN (" . implode(',', $ids) . ")"));
+
+    wp_send_json_success('Selected records deleted successfully.');
+}
+add_action('wp_ajax_wtc_delete_ips', 'wtc_delete_ips');
+
 
 ?>

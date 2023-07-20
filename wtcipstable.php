@@ -6,10 +6,11 @@ function wtc_render_ips_tab_content() {
 
     $ips = $wpdb->get_results("SELECT * FROM $table_name");
 
+    // Render the table HTML
     ?>
     <h2>Blocked IPs</h2>
 
-    <table class="wp-list-table widefat fixed striped">
+    <table id="wtc-ips-table" class="wp-list-table widefat fixed striped">
         <thead>
             <tr>
                 <th>ID</th>
@@ -22,6 +23,7 @@ function wtc_render_ips_tab_content() {
                 <th>WAF Status</th>
                 <th>CF Response</th>
                 <th>Is Sent</th>
+                <th>Delete</th>
             </tr>
         </thead>
         <tbody>
@@ -37,9 +39,58 @@ function wtc_render_ips_tab_content() {
                     <td><?php echo $ip->wafStatus; ?></td>
                     <td><?php echo $ip->cfResponse; ?></td>
                     <td><?php echo $ip->isSent; ?></td>
+                    <td><input type="checkbox" class="wtc-delete-checkbox" value="<?php echo $ip->id; ?>"></td>
                 </tr>
             <?php endforeach; ?>
         </tbody>
     </table>
+
+    <button id="wtc-delete-selected" class="button button-primary">Delete Selected</button>
+
+    <script>
+    jQuery(document).ready(function($) {
+        // Initialize DataTables
+        var table = $('#wtc-ips-table').DataTable();
+
+        // Add search, paging, and sorting functionality
+        table
+            .order([[0, 'desc']]) // Sort by ID column in descending order by default
+            .search('').draw(); // Perform initial search (empty search string)
+
+        // Handle checkbox selection and deletion
+        $('#wtc-delete-selected').on('click', function() {
+            var selectedIds = [];
+            $('.wtc-delete-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length > 0) {
+                if (confirm('Are you sure you want to delete the selected records?')) {
+                    // Perform AJAX request to delete the selected records
+                    $.ajax({
+                        url: ajaxurl, // WordPress AJAX URL
+                        type: 'POST',
+                        data: {
+                            action: 'wtc_delete_ips',
+                            ids: selectedIds
+                        },
+                        success: function(response) {
+                            // Reload the page after successful deletion
+                            location.reload();
+                        },
+                        error: function(xhr, status, error) {
+                            // Display error message
+                            console.error(xhr.responseText);
+                            alert('An error occurred while deleting the records. Please try again.');
+                        }
+                    });
+                }
+            } else {
+                alert('Please select at least one record to delete.');
+            }
+        });
+    });
+    </script>
     <?php
 }
+
