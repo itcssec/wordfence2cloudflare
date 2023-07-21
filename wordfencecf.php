@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.2.1
+Version: 1.3
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -514,6 +514,7 @@ function wtc_add_ips_to_cloudflare() {
 function wtc_run_process_manually() {
     if ( isset( $_POST['wtc_run_process'] ) ) {
         global $wpdb;
+        wtc_fetch_and_store_blocked_ips();
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option('blocked_hits_threshold', 1);
         $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
@@ -627,6 +628,157 @@ function wtc_delete_ips() {
     wp_send_json_success('Selected records deleted successfully.');
 }
 add_action('wp_ajax_wtc_delete_ips', 'wtc_delete_ips');
+
+// Callback for deleting IPs from Cloudflare
+function wtc_delete_ips_cloudflare() {
+    
+    if (!current_user_can('manage_options') || empty($_POST['ips'])) {
+        wp_send_json_error(['type' => 'error', 'message' => 'Invalid request data.']);
+        wp_die();
+    }
+
+    $cf_zone_id = get_option('cloudflare_zone_id');
+    $cf_api_key = get_option('cloudflare_key');
+    $cf_email = get_option('cloudflare_email');
+    error_log("API Key: $cf_api_key, Email: $cf_email, Zone ID: $cf_zone_id");
+
+    if (!$cf_zone_id || !$cf_api_key || !$cf_email) {
+        wp_send_json_error(['type' => 'error', 'message' => 'Cloudflare credentials are not set.']);
+        wp_die();
+    }
+
+    $ips_to_delete = $_POST['ips'];
+    $deleted_ips = [];
+
+    foreach ($ips_to_delete as $ip) {
+        $api_url = "https://api.cloudflare.com/client/v4/zones/$cf_zone_id/firewall/access_rules/rules?configuration.value=$ip";
+
+        $headers = [
+            "Content-Type: application/json",
+            "X-Auth-Email: $cf_email",
+            "X-Auth-Key: $cf_api_key",
+        ];
+
+        // Get all IP access rules from Cloudflare
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $api_url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => $headers,
+        ]);
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($err) {
+            $error_message = "Failed to fetch IP access rules from Cloudflare for IP: $ip - Error: $err";
+            error_log($error_message); // Log the error
+            continue; // Continue to the next IP
+        }
+
+        $data = json_decode($response, true);
+        // Log the data received from Cloudflare
+        error_log("Data received from Cloudflare for IP: $ip");
+        error_log(print_r($data, true));
+
+        if (empty($data['result'])) {
+            $error_message = "No matching IP access rule found in Cloudflare for IP: $ip";
+            error_log($error_message); // Log the error
+            continue; // Continue to the next IP
+        }
+
+        $matchedRuleId = $data['result'][0]['id'];
+        $matchedRuleType = $data['result'][0]['scope']['type'];
+        error_log("Matched Rule ID: " . $matchedRuleId);
+        error_log("Matched Rule Type: " . $matchedRuleType);
+
+        // Delete the matched IP rule from Cloudflare
+        if ($matchedRuleType == 'zone'){
+        $delete_url = "https://api.cloudflare.com/client/v4/zones/$cf_zone_id/firewall/access_rules/rules/$matchedRuleId";
+            
+        }else{
+        $delete_url = "https://api.cloudflare.com/client/v4/accounts/9a247a2ba7d05fcd2a72d002ffb9f73a/firewall/access_rules/rules/$matchedRuleId";
+            
+        }
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $delete_url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => "DELETE",
+            CURLOPT_HTTPHEADER => $headers,
+        ]);
+        
+        
+
+        $delete_response = curl_exec($curl);
+        $delete_err = curl_error($curl);
+       
+
+        curl_close($curl);
+
+        if ($delete_err) {
+            $error_message = "Failed to delete IP access rule for IP: $ip from Cloudflare - Error: $delete_err";
+            error_log($error_message); // Log the error
+            continue; // Continue to the next IP
+        }
+
+         $delete_data = json_decode($delete_response, true);
+          error_log("Data received from Delete Cloudflare for IP: $ip");
+        error_log(print_r($delete_data, true));
+        foreach ($delete_data['messages'] as $error) {
+            error_log("Error Message: " . $error); // Log the error
+        }
+        if (!empty($delete_data['success']) && $delete_data['success'] === true) {
+            $deleted_ips[] = $ip;
+            $ids = $ip;
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+            // Delete the selected IPs
+            $wpdb->query($wpdb->prepare("DELETE FROM $table_name WHERE ip like '%$ip%'"));
+        } else {
+            $error_message = "Failed to delete IP access rule for IP: $ip from Cloudflare. Response: " . print_r($delete_data, true);
+            error_log($error_message); // Log the error
+        }
+    }
+
+    // If there were deleted IPs, send the response
+    if (!empty($deleted_ips)) {
+        wp_send_json_success(['type' => 'success', 'message' => 'IPs deleted successfully from Cloudflare.', 'deleted_ips' => $deleted_ips]);
+    } else {
+        wp_send_json_error(['type' => 'error', 'message' => 'No valid IP access rules were deleted from Cloudflare.']);
+    }
+
+    wp_die();
+}
+add_action('wp_ajax_wtc_delete_ips_cloudflare', 'wtc_delete_ips_cloudflare');
+
+
+
+
+
+// Function to display the admin notice
+function wtc_display_admin_notice() {
+    if (!isset($_GET['wtc_notice'])) {
+        return;
+    }
+
+    $message = sanitize_text_field($_GET['wtc_notice']);
+    $type = isset($_GET['wtc_notice']) ? (in_array($_GET['wtc_notice'], array('error', 'updated')) ? $_GET['wtc_notice'] : 'updated') : 'updated';
+
+    echo "<div class='notice notice-$type is-dismissible'><p>$message</p></div>";
+}
+add_action('admin_notices', 'wtc_display_admin_notice');
+
+
 
 
 ?>

@@ -4,7 +4,7 @@ Tags: Wordfence, Cloudflare, Security, Wordpress Security, Firewall
 Requires at least: 5.2
 Requires PHP: 7.4
 Tested up to: 6.2
-Stable tag: 1.2.1
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ Added new functionalities to work with cloudflare including a table and an extra
 New options on the blocked ips table
 Minor Fix
 
+= 1.3 =
+The user now can remove a blocked ip either from the local list or from both the Cloudflare and the plugin blocked list. 
+
 == Changelog ==
 
 = 1.2 =
@@ -76,3 +79,6 @@ Added new functionalities to work with cloudflare including a table and an extra
 
 = 1.2.1 =
 New options on the blocked ips table
+
+= 1.3 =
+The user now can remove a blocked ip either from the local list or from both the Cloudflare and the plugin blocked list. 
