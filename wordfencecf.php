@@ -12,7 +12,7 @@ Text Domain: wordfence2cloudflare
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-
+include_once plugin_dir_path(__FILE__) . 'wtcipstable.php';
 // Add settings link to plugin page
 function wtc_add_settings_link($links) {
     $settings_link = '<a href="' . admin_url('options-general.php?page=wtc-settings') . '">' . __('Settings') . '</a>';
@@ -156,8 +156,6 @@ function wtc_render_ips_tab() {
         wp_die('Access is not allowed.');
     }
 
-    // Include the necessary file to render the IPs table
-    include_once plugin_dir_path(__FILE__) . 'wtcipstable.php';
     wtc_render_ips_tab_content();
 }
 
@@ -614,6 +612,7 @@ add_action('admin_enqueue_scripts', 'wtc_enqueue_scripts');
 // AJAX action to delete blocked IPs
 function wtc_delete_ips() {
     global $wpdb;
+    check_ajax_referer('wtc_ips_tab_action', 'wtc_ips_tab_nonce');
 
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Access is not allowed.');
@@ -631,7 +630,8 @@ add_action('wp_ajax_wtc_delete_ips', 'wtc_delete_ips');
 
 // Callback for deleting IPs from Cloudflare
 function wtc_delete_ips_cloudflare() {
-    
+    // Verify the nonce before processing the request
+    check_ajax_referer('wtc_ips_tab_action', 'wtc_ips_tab_nonce');
     if (!current_user_can('manage_options') || empty($_POST['ips'])) {
         wp_send_json_error(['type' => 'error', 'message' => 'Invalid request data.']);
         wp_die();
