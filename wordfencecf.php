@@ -771,21 +771,22 @@ add_action('wp_ajax_wtc_delete_ips_cloudflare', 'wtc_delete_ips_cloudflare');
 
 
 
-// Function to display the admin notice
 function wtc_display_admin_notice() {
     if (!isset($_GET['wtc_notice'])) {
         return;
     }
 
     $message = sanitize_text_field($_GET['wtc_notice']);
-    $type = isset($_GET['wtc_type']) ? (in_array($_GET['wtc_type'], array('error', 'updated')) ? $_GET['wtc_type'] : 'updated') : 'updated';
+    $type = isset($_GET['wtc_type']) ? (in_array($_GET['wtc_type'], array('error', 'updated'), true) ? $_GET['wtc_type'] : 'updated') : 'updated';
 
     // Encode for output
     $message = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+    $type = htmlspecialchars($type, ENT_QUOTES, 'UTF-8');
 
     echo "<div class='notice notice-$type is-dismissible'><p>$message</p></div>";
 }
 add_action('admin_notices', 'wtc_display_admin_notice');
+
 
 
 
