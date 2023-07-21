@@ -609,7 +609,6 @@ function wtc_enqueue_scripts() {
 }
 add_action('admin_enqueue_scripts', 'wtc_enqueue_scripts');
 
-// AJAX action to delete blocked IPs
 function wtc_delete_ips() {
     global $wpdb;
     check_ajax_referer('wtc_ips_tab_action', 'wtc_ips_tab_nonce');
@@ -621,12 +620,19 @@ function wtc_delete_ips() {
     $table_name = $wpdb->prefix . 'wtc_blocked_ips';
     $ids = $_POST['ids'];
 
+    // Ensure $ids are integers only
+    $ids = array_map('intval', $ids);
+    
+    $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+    $query = "DELETE FROM $table_name WHERE id IN ($placeholders)";
+
     // Delete the selected IPs
-    $wpdb->query($wpdb->prepare("DELETE FROM $table_name WHERE id IN (" . implode(',', $ids) . ")"));
+    $wpdb->query($wpdb->prepare($query, ...$ids));
 
     wp_send_json_success('Selected records deleted successfully.');
 }
 add_action('wp_ajax_wtc_delete_ips', 'wtc_delete_ips');
+
 
 // Callback for deleting IPs from Cloudflare
 function wtc_delete_ips_cloudflare() {
@@ -772,11 +778,15 @@ function wtc_display_admin_notice() {
     }
 
     $message = sanitize_text_field($_GET['wtc_notice']);
-    $type = isset($_GET['wtc_notice']) ? (in_array($_GET['wtc_notice'], array('error', 'updated')) ? $_GET['wtc_notice'] : 'updated') : 'updated';
+    $type = isset($_GET['wtc_type']) ? (in_array($_GET['wtc_type'], array('error', 'updated')) ? $_GET['wtc_type'] : 'updated') : 'updated';
+
+    // Encode for output
+    $message = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
 
     echo "<div class='notice notice-$type is-dismissible'><p>$message</p></div>";
 }
 add_action('admin_notices', 'wtc_display_admin_notice');
+
 
 
 
