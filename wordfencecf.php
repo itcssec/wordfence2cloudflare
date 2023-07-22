@@ -98,7 +98,17 @@ function wtc_create_custom_table() {
 }
 register_activation_hook(__FILE__, 'wtc_create_custom_table');
 
+function wor_fs_uninstall_cleanup(){
 
+
+global $wpdb;
+$table_name = $wpdb->prefix . 'wtc_blocked_ips'; // replace with your table name
+
+$wpdb->query("DROP TABLE IF EXISTS $table_name");
+	
+}
+ // Not like register_uninstall_hook(), you do NOT have to use a static function.
+    wor_fs()->add_action('after_uninstall', 'wor_fs_uninstall_cleanup');
 // Fetch blocked IPs from Wordfence and add them to the custom table
 function wtc_fetch_and_store_blocked_ips() {
     global $wpdb;
