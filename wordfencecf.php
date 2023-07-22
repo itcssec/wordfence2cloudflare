@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.1
+Version: 1.3.2
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -114,7 +114,7 @@ function wtc_fetch_and_store_blocked_ips() {
     global $wpdb;
 
     $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-    $threshold = get_option('blocked_hits_threshold', 1);
+    $threshold = get_option('blocked_hits_threshold', 0);
 
     $blocked_ips = $wpdb->get_results(
         "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedHits >= {$threshold}",
@@ -274,7 +274,7 @@ function wtc_render_settings_tab() {
                 </tr>
                 <tr valign="top">
                     <th scope="row">Blocked Hits Threshold</th>
-                    <td><input type="number" min="1" name="blocked_hits_threshold" value="<?php echo esc_attr( get_option('blocked_hits_threshold', 1) ); ?>" /></td>
+                    <td><input type="number" min="1" name="blocked_hits_threshold" value="<?php echo esc_attr( get_option('blocked_hits_threshold', 0) ); ?>" /></td>
                 </tr>
                 <tr valign="top">
                     <th scope="row">Block Scope</th>
@@ -425,7 +425,7 @@ add_action('wtc_check_new_blocked_ips', 'wtc_check_new_blocked_ips');
 function wtc_check_new_blocked_ips() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $threshold = get_option('blocked_hits_threshold', 1);
+        $threshold = get_option('blocked_hits_threshold', 0);
         $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
 
         // Convert last processed time to the same format as the blockedTime column
@@ -561,7 +561,7 @@ function wtc_run_process_manually() {
         global $wpdb;
         wtc_fetch_and_store_blocked_ips();
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $threshold = get_option('blocked_hits_threshold', 1);
+        $threshold = get_option('blocked_hits_threshold', 0);
         $last_processed_time = get_option('wtc_last_processed_time', 0); // Default to 0 if not set
 
         // Convert last processed time to the same format as the blockedTime column
