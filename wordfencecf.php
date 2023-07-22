@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3
+Version: 1.3.1
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -12,6 +12,43 @@ Text Domain: wordfence2cloudflare
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+
+if ( ! function_exists( 'wor_fs' ) ) {
+    // Create a helper function for easy SDK access.
+    function wor_fs() {
+        global $wor_fs;
+
+        if ( ! isset( $wor_fs ) ) {
+            // Include Freemius SDK.
+            require_once dirname(__FILE__) . '/freemius/start.php';
+
+            $wor_fs = fs_dynamic_init( array(
+                'id'                  => '13207',
+                'slug'                => 'wordfence2cloudflare',
+                'type'                => 'plugin',
+                'public_key'          => 'pk_ed1eec939e12cfd4b144c98c2adae',
+                'is_premium'          => false,
+                'has_addons'          => false,
+                'has_paid_plans'      => false,
+                'menu'                => array(
+                    'slug'           => 'wtc-settings',
+                    'support'        => false,
+                    'parent'         => array(
+                        'slug' => 'options-general.php',
+                    ),
+                ),
+            ) );
+        }
+
+        return $wor_fs;
+    }
+
+    // Init Freemius.
+    wor_fs();
+    // Signal that SDK was initiated.
+    do_action( 'wor_fs_loaded' );
+}
+
 include_once plugin_dir_path(__FILE__) . 'wtcipstable.php';
 // Add settings link to plugin page
 function wtc_add_settings_link($links) {
