@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.2
+Version: 1.3.3
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -84,9 +84,9 @@ function wtc_create_custom_table() {
 			blockedHits INT(11) NOT NULL,
 			ip VARCHAR(45) NOT NULL,
 			countryCode VARCHAR(2) NOT NULL,
-			countryName VARCHAR(64) NOT NULL,
-			whoisEntry TEXT NOT NULL,
-			wafStatus TEXT NOT NULL,
+			usageType VARCHAR(64) NOT NULL,
+			isp TEXT NOT NULL,
+			confidenceScore TEXT NOT NULL,
 			cfResponse TEXT NOT NULL,
 			isSent TINYINT(1) NOT NULL DEFAULT '0',
 			PRIMARY KEY (id)
@@ -277,8 +277,12 @@ function wtc_render_settings_tab() {
                     <td><input type="text" min="1" name="cloudflare_account_id" value="<?php echo esc_attr( get_option('cloudflare_account_id') ); ?>" /></td>
                 </tr>
                 <tr valign="top">
+                    <th scope="row">AbuseIP Database Key</th>
+                    <td><input type="text" min="1" name="abuseipdb_api_id" value="<?php echo esc_attr( get_option('abuseipdb_api_id') ); ?>" /></td>
+                </tr>
+                <tr valign="top">
                     <th scope="row">Blocked Hits Threshold</th>
-                    <td><input type="number" min="1" name="blocked_hits_threshold" value="<?php echo esc_attr( get_option('blocked_hits_threshold', 0) ); ?>" /></td>
+                    <td><input type="number" min="0" name="blocked_hits_threshold" value="<?php echo esc_attr( get_option('blocked_hits_threshold', 0) ); ?>" /></td>
                 </tr>
                 <tr valign="top">
                     <th scope="row">Block Scope</th>
@@ -352,6 +356,7 @@ function wtc_options_init() {
     register_setting( 'wtc-settings-group', 'cloudflare_key' );  
     register_setting( 'wtc-settings-group', 'cloudflare_zone_id' );  
 	register_setting( 'wtc-settings-group', 'cloudflare_account_id' );
+	register_setting( 'wtc-settings-group', 'abuseipdb_api_id' );
     register_setting('wtc-settings-group', 'blocked_hits_threshold');  
     register_setting('wtc-settings-group', 'block_scope');
     register_setting( 'wtc-settings-group', 'cron_interval' );
@@ -534,6 +539,7 @@ function wtc_add_ips_to_cloudflare() {
         				array('%d'),
         				array('%d')
         			);
+        			wtc_getipinfo($ip_address);
         			continue;
 				}
 				elseif($responseCode != '10009' && $responseMessage != 'firewallaccessrules.api.duplicate_of_existing') {
@@ -545,6 +551,7 @@ function wtc_add_ips_to_cloudflare() {
 			}
 
 			wtc_update_cloudflare_response($ip->id, $response['body']);
+			wtc_getipinfo($ip_address);
 
 			// Mark IP as sent
 			$wpdb->update(
@@ -560,20 +567,32 @@ function wtc_add_ips_to_cloudflare() {
 
 //add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
 
-function getipinfo(){
+function wtc_getipinfo($ip_address){
+    global $wpdb;
+    
+    $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+	$abuseipdb_account_id = get_option('abuseipdb_api_id');
+	$email = get_option('cloudflare_email');
+	$key = get_option('cloudflare_key');
 	$curl = curl_init();
+	error_log("IP info : " . $ip_address);
 
-  curl_setopt_array($curl, [
-  CURLOPT_URL => "https://api.cloudflare.com/client/v4/accounts/account_identifier/intel/ip",
-  CURLOPT_RETURNTRANSFER => true,
-  CURLOPT_ENCODING => "",
-  CURLOPT_MAXREDIRS => 10,
-  CURLOPT_TIMEOUT => 30,
-  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-  CURLOPT_CUSTOMREQUEST => "GET",
-  CURLOPT_HTTPHEADER => [
-    "Content-Type: application/json"
-  ],
+$maxAgeInDays = '365';
+
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+    CURLOPT_URL => "https://api.abuseipdb.com/api/v2/check?ipAddress=$ip_address&maxAgeInDays=$maxAgeInDays",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => "",
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => "GET",
+    CURLOPT_HTTPHEADER => [
+        "Accept: application/json",
+        "Key: $abuseipdb_account_id"
+    ],
 ]);
 
 $response = curl_exec($curl);
@@ -582,10 +601,26 @@ $err = curl_error($curl);
 curl_close($curl);
 
 if ($err) {
-  echo "cURL Error #:" . $err;
+    error_log("cURL Error #:" . $err);
 } else {
-  echo $response;
+     error_log($response);
+    $ipDetails = json_decode($response, true);
+    error_log(print_r($ipDetails, true));
+    error_log(print_r($ipDetails['data']['abuseConfidenceScore'], true));
+    $countrycode = $ipDetails['data']['countryCode'];
+    $score = $ipDetails['data']['abuseConfidenceScore'];
+    $isp = $ipDetails['data']['isp'];
+    $usageType = $ipDetails['data']['usageType'];
+    // Mark IP as sent
+			$wpdb->update(
+				$table_name,
+				array('countryCode' => $countrycode, 'confidenceScore' => $score, 'isp' => $isp, 'usageType' => $usageType),
+				array('ip' => $ip_address),
+				array('%s'), // Data format
+				array('%s')
+			);
 }
+
 }
 
 function wtc_run_process_manually() {

@@ -18,9 +18,9 @@ function wtc_render_ips_tab_content() {
                 <th>Blocked Hits</th>
                 <th>IP</th>
                 <th>Country Code</th>
-                <th>Country Name</th>
-                <th>Whois Entry</th>
-                <th>WAF Status</th>
+                <th>Usage Type</th>
+                <th>ISP</th>
+                <th>Confidence Score</th>
                 <th>CF Response</th>
                 <th>Is Sent</th>
                 <th>Delete</th>
@@ -34,9 +34,9 @@ function wtc_render_ips_tab_content() {
                     <td><?php echo esc_html($ip->blockedHits); ?></td>
                     <td><?php echo esc_html($ip->ip); ?></td>
                     <td><?php echo esc_html($ip->countryCode); ?></td>
-                    <td><?php echo esc_html($ip->countryName); ?></td>
-                    <td><?php echo esc_html($ip->whoisEntry); ?></td>
-                    <td><?php echo esc_html($ip->wafStatus); ?></td>
+                    <td><?php echo esc_html($ip->usageType); ?></td>
+                    <td><?php echo esc_html($ip->isp); ?></td>
+                    <td><?php echo esc_html($ip->confidenceScore); ?></td>
                     <td><?php echo esc_html($ip->cfResponse); ?></td>
                     <td><?php echo esc_html($ip->isSent); ?></td>
                     <td>

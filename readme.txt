@@ -4,7 +4,7 @@ Tags: Wordfence, Cloudflare, Security, Wordpress Security, Firewall
 Requires at least: 5.2
 Requires PHP: 7.4
 Tested up to: 6.2
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ Freemius Integration
 = 1.3.2 =
 Minor fixes
 
+= 1.3.3 =
+AbuseIP Database Integration
+
 == Changelog ==
 
 = 1.2 =
@@ -94,3 +97,6 @@ Freemius Integration
 
 = 1.3.2 =
 Minor fixes
+
+= 1.3.3 =
+AbuseIP Database Integration
