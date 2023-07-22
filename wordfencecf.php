@@ -272,6 +272,10 @@ function wtc_render_settings_tab() {
                     <th scope="row">Cloudflare ZoneID</th>
                     <td><input type="text" min="1" name="cloudflare_zone_id" value="<?php echo esc_attr( get_option('cloudflare_zone_id') ); ?>" /></td>
                 </tr>
+				 <tr valign="top">
+                    <th scope="row">Cloudflare Account ID</th>
+                    <td><input type="text" min="1" name="cloudflare_account_id" value="<?php echo esc_attr( get_option('cloudflare_account_id') ); ?>" /></td>
+                </tr>
                 <tr valign="top">
                     <th scope="row">Blocked Hits Threshold</th>
                     <td><input type="number" min="1" name="blocked_hits_threshold" value="<?php echo esc_attr( get_option('blocked_hits_threshold', 0) ); ?>" /></td>
@@ -347,6 +351,7 @@ function wtc_options_init() {
     register_setting( 'wtc-settings-group', 'cloudflare_email' ); 
     register_setting( 'wtc-settings-group', 'cloudflare_key' );  
     register_setting( 'wtc-settings-group', 'cloudflare_zone_id' );  
+	register_setting( 'wtc-settings-group', 'cloudflare_account_id' );
     register_setting('wtc-settings-group', 'blocked_hits_threshold');  
     register_setting('wtc-settings-group', 'block_scope');
     register_setting( 'wtc-settings-group', 'cron_interval' );
@@ -555,6 +560,33 @@ function wtc_add_ips_to_cloudflare() {
 
 //add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
 
+function getipinfo(){
+	$curl = curl_init();
+
+  curl_setopt_array($curl, [
+  CURLOPT_URL => "https://api.cloudflare.com/client/v4/accounts/account_identifier/intel/ip",
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => "",
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 30,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => "GET",
+  CURLOPT_HTTPHEADER => [
+    "Content-Type: application/json"
+  ],
+]);
+
+$response = curl_exec($curl);
+$err = curl_error($curl);
+
+curl_close($curl);
+
+if ($err) {
+  echo "cURL Error #:" . $err;
+} else {
+  echo $response;
+}
+}
 
 function wtc_run_process_manually() {
     if ( isset( $_POST['wtc_run_process'] ) ) {
@@ -691,6 +723,7 @@ function wtc_delete_ips_cloudflare() {
     }
 
     $cf_zone_id = get_option('cloudflare_zone_id');
+	$cf_account_id = get_option('cloudflare_account_id');
     $cf_api_key = get_option('cloudflare_key');
     $cf_email = get_option('cloudflare_email');
     error_log("API Key: $cf_api_key, Email: $cf_email, Zone ID: $cf_zone_id");
@@ -758,7 +791,7 @@ function wtc_delete_ips_cloudflare() {
         $delete_url = "https://api.cloudflare.com/client/v4/zones/$cf_zone_id/firewall/access_rules/rules/$matchedRuleId";
             
         }else{
-        $delete_url = "https://api.cloudflare.com/client/v4/accounts/9a247a2ba7d05fcd2a72d002ffb9f73a/firewall/access_rules/rules/$matchedRuleId";
+        $delete_url = "https://api.cloudflare.com/client/v4/accounts/$cf_account_id/firewall/access_rules/rules/$matchedRuleId";
             
         }
 
