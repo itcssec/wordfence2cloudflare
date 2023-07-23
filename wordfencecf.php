@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.3
+Version: 1.3.2
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -539,7 +539,10 @@ function wtc_add_ips_to_cloudflare() {
         				array('%d'),
         				array('%d')
         			);
+        			$abuseipdb_account_id = get_option('abuseipdb_api_id');
+        			if(!empty($abuseipdb_account_id)){
         			wtc_getipinfo($ip_address);
+        			}
         			continue;
 				}
 				elseif($responseCode != '10009' && $responseMessage != 'firewallaccessrules.api.duplicate_of_existing') {
@@ -551,7 +554,11 @@ function wtc_add_ips_to_cloudflare() {
 			}
 
 			wtc_update_cloudflare_response($ip->id, $response['body']);
-			wtc_getipinfo($ip_address);
+			
+			$abuseipdb_account_id = get_option('abuseipdb_api_id');
+        	if(!empty($abuseipdb_account_id)){
+        			wtc_getipinfo($ip_address);
+        		}
 
 			// Mark IP as sent
 			$wpdb->update(
