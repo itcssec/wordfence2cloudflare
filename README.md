@@ -9,6 +9,18 @@ Customizable Settings: The plugin allows you to configure various settings, incl
 
 Manual Process Trigger: You can manually trigger the synchronization process with a single click, giving you control over when the synchronization occurs. This can be helpful in urgent situations or when you want to ensure immediate synchronization of blocked IPs.
 
+The Wordfence to Cloudflare plugin now includes an optional integration with AbuseIPDB's API. This enhances the overall functionality and gives users the ability to obtain additional information about the blocked IPs. With this new feature, users can gather comprehensive details about the origin and credibility of the malicious traffic, contributing to a more in-depth understanding of security threats.
+
+AbuseIPDB Integration: The plugin can now optionally connect to AbuseIPDB's API. Once enabled, this feature allows you to fetch and display additional details about the IPs blocked by Wordfence. This additional information includes country code, usage type, ISP, and a confidence score, further enhancing the transparency and control over your website's security.
+
+Country Code: Identify the geographic origin of the blocked IP addresses. This feature can help understand if your site is being targeted from specific regions.
+
+Usage Type: Get to know the type of entity using the blocked IP. This knowledge can provide insights into the nature of the potential threats.
+
+ISP Information: Obtain details about the internet service provider of the blocked IP.
+
+Confidence Score: AbuseIPDB provides a confidence score that indicates how likely the IP is to engage in abusive behavior. This feature can be useful for prioritizing responses to threats.
+
 # Security Benefits:
 
 Enhanced IP Blocking: By combining the powerful IP blocking capabilities of Wordfence and Cloudflare, this plugin strengthens your website's defense against malicious traffic. It ensures that blocked IPs identified by Wordfence are effectively blocked at the Cloudflare level, preventing them from reaching your server.
