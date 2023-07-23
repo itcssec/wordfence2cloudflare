@@ -37,21 +37,28 @@ Seamless Integration: The plugin seamlessly integrates with your existing Wordfe
 By utilizing the combined power of Wordfence and Cloudflare, this plugin helps safeguard your WordPress website from malicious IPs more effectively. It automates the synchronization process, reduces server load, and provides customizable security settings, all while ensuring the secure storage of your Cloudflare key. With Wordfence to Cloudflare, you can enhance the security posture of your website and protect it from a wide range of security threats.
 
 
-== Installation ==
+== Installation: ==
 
-1. Upload the plugin files to the `/wp-content/plugins/customize-product-delivery-date` directory, or install the plugin through the WordPress plugins screen directly.
-2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Use the Settings->WTC Settings screen to configure the plugin
+Upload the wordfence-to-cloudflare directory to your /wp-content/plugins/ directory, or install the plugin through the WordPress plugins screen directly.
+Activate the plugin through the 'Plugins' screen in WordPress.
+Use the Settings -> Wordfence to Cloudflare screen to configure the plugin.
 
-== Frequently Asked Questions ==
+== Frequently Asked Questions: ==
 
-= Does this plugin require any other plugins? =
+Can I manually trigger the IP synchronization process?
+Yes, the plugin provides a button to manually trigger the synchronization process. This can be helpful in urgent situations or when you want to ensure immediate synchronization of blocked IPs.
 
-Yes, this plugin requires the Wordfence security plugin and an active account in Cloudflare.
+Where is my Cloudflare key stored?
+Your Cloudflare key is securely stored in the WordPress's built-in options table. It is encrypted and can only be accessed by authorized processes.
 
-= Does this plugin support any other languages? =
+Can I customize the security settings of the plugin?
+Yes, the plugin offers flexible settings that allow you to adjust the blocked hits threshold, choose between domain-specific or account-wide blocking, set the cron interval, and enter your Cloudflare credentials.
 
-No, this plugin does not support any other languages.
+How does the plugin reduce the server load?
+By offloading the task of blocking malicious IPs to Cloudflare, the plugin reduces the load on your server. This can improve its performance and responsiveness, particularly during DDoS attacks or when dealing with a large number of blocked IPs.
+
+What are the requirements to use this plugin?
+This plugin requires an active Wordfence and Cloudflare account. You also need to have access to your Cloudflare API key and Zone ID to configure the plugin.
 
 == Screenshots ==
 
