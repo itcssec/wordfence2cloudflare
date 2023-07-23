@@ -2,7 +2,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.3
+Version: 1.3.4
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -145,11 +145,23 @@ function wtc_fetch_and_store_blocked_ips() {
             // IP already exists, skip inserting a new record
             continue;
         }else{
+			
+			$timestamp = $ip->blockedTime;
+			$timezone = get_option('timezone_string');
+
+			$date = new DateTime();
+			$date->setTimestamp($timestamp);
+
+			if (empty($timezone)) {
+				$timezone = 'UTC';
+			}
+
+			$date->setTimezone(new DateTimeZone($timezone));
 
 			$wpdb->insert(
 				$table_name,
 				array(
-					'blockedTime' => date('Y-m-d H:i:s', $ip->blockedTime),
+					'blockedTime' => $date->format('Y-m-d H:i:s'),
 					'blockedHits' => $ip->blockedHits,
 					'ip' => $ip_address,
 					'cfResponse' => '',
@@ -454,13 +466,21 @@ function wtc_check_new_blocked_ips() {
         //);
 
         error_log("SQL Query: " . $wpdb->last_query);
+		$timezone = get_option('timezone_string');
+
+		if (empty($timezone)) {
+			$timezone = 'UTC';
+		}
+
+		// For the current date and time
+		$current_date = new DateTime('now', new DateTimeZone($timezone));
 
         // Run the process
         $processed_ips_count = count($blocked_ips);
         if($blocked_ips) {
             error_log("Blocked IPs: " . print_r($blocked_ips, true)); // Debug statement
             wtc_add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
-            update_option('wtc_last_processed_time', time());
+            update_option('wtc_last_processed_time', $current_date->format('Y-m-d H:i:s'));
             update_option('wtc_processed_ips_count', $processed_ips_count);
         }else{
             error_log("No New Blocked IPs Found");
@@ -651,13 +671,21 @@ function wtc_run_process_manually() {
 		OBJECT);
 
         error_log("SQL Query: " . $wpdb->last_query);
+		$timezone = get_option('timezone_string');
+
+		if (empty($timezone)) {
+			$timezone = 'UTC';
+		}
+
+		// For the current date and time
+		$current_date = new DateTime('now', new DateTimeZone($timezone));
 
         // Run the process
         $processed_ips_count = count($blocked_ips);
         if($blocked_ips) {
             error_log("Blocked IPs: " . print_r($blocked_ips, true)); // Debug statement
             wtc_add_ips_to_cloudflare( $blocked_ips ); // Pass $blocked_ips as an argument
-            update_option('wtc_last_processed_time', time());
+            update_option('wtc_last_processed_time', $current_date->format('Y-m-d H:i:s'));
             update_option('wtc_processed_ips_count', $processed_ips_count);
         }else{
             error_log("No New Blocked IPs Found - Manual Process");

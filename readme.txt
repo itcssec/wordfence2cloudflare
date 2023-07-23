@@ -4,7 +4,7 @@ Tags: Wordfence, Cloudflare, Security, Wordpress Security, Firewall
 Requires at least: 5.2
 Requires PHP: 7.4
 Tested up to: 6.2
-Stable tag: 1.3.3
+Stable tag: 1.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -100,6 +100,9 @@ Minor fixes
 = 1.3.3 =
 AbuseIP Database Integration
 
+= 1.3.4 =
+Timezone fix
+
 == Changelog ==
 
 = 1.2 =
@@ -119,3 +122,6 @@ Minor fixes
 
 = 1.3.3 =
 AbuseIP Database Integration
+
+= 1.3.4 =
+Timezone fix
