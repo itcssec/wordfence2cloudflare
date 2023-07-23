@@ -12,7 +12,9 @@ Text Domain: wordfence2cloudflare
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-
+ if ( function_exists( 'wor_fs' ) ) {
+        wor_fs()->set_basename( true, __FILE__ );
+    } else {
 if ( ! function_exists( 'wor_fs' ) ) {
     // Create a helper function for easy SDK access.
     function wor_fs() {
@@ -27,9 +29,12 @@ if ( ! function_exists( 'wor_fs' ) ) {
                 'slug'                => 'wordfence2cloudflare',
                 'type'                => 'plugin',
                 'public_key'          => 'pk_ed1eec939e12cfd4b144c98c2adae',
-                'is_premium'          => false,
+                'is_premium'          => true,
+                'premium_suffix'      => 'PremiumPlus',
+                // If your plugin is a serviceware, set this option to false.
+                'has_premium_version' => true,
                 'has_addons'          => false,
-                'has_paid_plans'      => false,
+                'has_paid_plans'      => true,
                 'menu'                => array(
                     'slug'           => 'wtc-settings',
                     'support'        => false,
@@ -912,6 +917,6 @@ add_action('admin_notices', 'wtc_display_admin_notice');
 
 
 
-
+	}
 
 ?>
