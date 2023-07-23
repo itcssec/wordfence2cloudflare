@@ -326,7 +326,7 @@ function wtc_render_settings_tab() {
             <table class="form-table">
                 <tr valign="top">
                     <th scope="row">Last Cron Run:</th>
-                    <td><?php echo date('Y-m-d H:i:s', get_option('wtc_last_processed_time')); ?></td>
+                    <td><?php echo (get_option('wtc_last_processed_time')); ?></td>
                 </tr>
                 <tr valign="top">
                     <th scope="row">IPs Processed:</th>
@@ -468,12 +468,14 @@ function wtc_check_new_blocked_ips() {
         error_log("SQL Query: " . $wpdb->last_query);
 		$timezone = get_option('timezone_string');
 
+		// Check if the timezone option is empty and set a default value
 		if (empty($timezone)) {
 			$timezone = 'UTC';
 		}
 
-		// For the current date and time
-		$current_date = new DateTime('now', new DateTimeZone($timezone));
+		$timestamp = time();
+		$current_date = new DateTime("now", new DateTimeZone($timezone)); //first argument "must" be a string
+		$current_date->setTimestamp($timestamp); 
 
         // Run the process
         $processed_ips_count = count($blocked_ips);
@@ -673,12 +675,14 @@ function wtc_run_process_manually() {
         error_log("SQL Query: " . $wpdb->last_query);
 		$timezone = get_option('timezone_string');
 
+		// Check if the timezone option is empty and set a default value
 		if (empty($timezone)) {
 			$timezone = 'UTC';
 		}
 
-		// For the current date and time
-		$current_date = new DateTime('now', new DateTimeZone($timezone));
+		$timestamp = time();
+		$current_date = new DateTime("now", new DateTimeZone($timezone)); //first argument "must" be a string
+		$current_date->setTimestamp($timestamp); 
 
         // Run the process
         $processed_ips_count = count($blocked_ips);
