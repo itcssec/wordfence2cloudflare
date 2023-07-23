@@ -28,7 +28,8 @@ By utilizing the combined power of Wordfence and Cloudflare, this plugin helps s
 Upload the wordfence-to-cloudflare directory to your /wp-content/plugins/ directory, or install the plugin through the WordPress plugins screen directly.
 Activate the plugin through the 'Plugins' screen in WordPress.
 Use the Settings -> Wordfence to Cloudflare screen to configure the plugin.
-Frequently Asked Questions:
+
+# Frequently Asked Questions:
 
 Can I manually trigger the IP synchronization process?
 Yes, the plugin provides a button to manually trigger the synchronization process. This can be helpful in urgent situations or when you want to ensure immediate synchronization of blocked IPs.
