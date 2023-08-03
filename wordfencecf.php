@@ -3,7 +3,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare PremiumPlus
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.5
+Version: 1.3.6
 
 Update URI: https://api.freemius.com
 Author: ITCS
@@ -113,7 +113,16 @@ if ( function_exists( 'wor_fs' ) ) {
         global  $wpdb ;
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option( 'blocked_hits_threshold', 0 );
-        $blocked_ips = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedHits >= {$threshold}", OBJECT );
+        $blocked_ips = $wpdb->get_results( "
+		SELECT IP, unixday as blockedTime, blockCount as blockedHits
+		FROM {$wpdb->prefix}wfblockediplog
+		WHERE blockCount >= {$threshold}
+		UNION
+		SELECT IP, blockedTime, blockedHits
+		FROM {$wpdb->prefix}wfblocks7
+		WHERE blockedHits >= {$threshold}
+	", OBJECT );
+
         if ( $blocked_ips ) {
             foreach ( $blocked_ips as $ip ) {
                 $ip_address = inet_ntop( $ip->IP );

@@ -4,7 +4,7 @@ Tags: Wordfence, Cloudflare, Security, Wordpress Security, Firewall
 Requires at least: 5.2
 Requires PHP: 7.4
 Tested up to: 6.2
-Stable tag: 1.3.5
+Stable tag: 1.3.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,8 +78,8 @@ This plugin requires an active Wordfence and Cloudflare account. You also need t
 
 == Upgrade Notice ==
 
-= 1.3.5 =
-Timezone fix
+= 1.3.6 =
+Added ips blocked from WordFence wfBlockedIPLog too
 
 == Changelog ==
 
@@ -106,3 +106,6 @@ Timezone fix
 
 = 1.3.5 =
 Timezone fix
+
+= 1.3.6 =
+Added ips blocked from WordFence wfBlockedIPLog too
