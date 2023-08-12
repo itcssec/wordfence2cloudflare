@@ -317,6 +317,9 @@ if ( function_exists( 'wor_fs' ) ) {
                     <th scope="row">Cron Interval</th>
                     <td>
                         <select name="cron_interval">
+                            <option value="none" <?php 
+        selected( get_option( 'cron_interval' ), 'none' );
+        ?>>Not Set</option>
                             <option value="5min" <?php 
         selected( get_option( 'cron_interval' ), '5min' );
         ?>>Every 5 Minutes</option>
