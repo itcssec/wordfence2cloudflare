@@ -59,7 +59,7 @@ if ( function_exists( 'wor_fs' ) ) {
         // Signal that SDK was initiated.
         do_action( 'wor_fs_loaded' );
     }
-    if ( wor_fs()->is_plan( 'premiumplus' )){
+    if ( wor_fs()->is__premium_only()){
     include_once plugin_dir_path( __FILE__ ) . 'wtctraffic.php';
     }
     include_once plugin_dir_path( __FILE__ ) . 'wtcipstable.php';
@@ -244,7 +244,7 @@ if ( function_exists( 'wor_fs' ) ) {
         echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-ips' ? 'nav-tab-active' : '' ) ;
         ?>">Blocked IPs</a>
         <?php
-        if (wor_fs()->is_plan( 'premiumplus' )) {
+        if (wor_fs()->is__premium_only()) {
                     ?>
         <a href="?page=wtc-settings&tab=wtc-traffic" class="nav-tab <?php 
         echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-traffic' ? 'nav-tab-active' : '' ) ;
@@ -324,7 +324,7 @@ if ( function_exists( 'wor_fs' ) ) {
                     <td>
                         <?php 
                         $api_key = get_option( 'whatismybr_api_id' );
-                        if (wor_fs()->is_plan( 'premiumplus', true )) {
+                        if (wor_fs()->is__premium_only()) {
                             echo '<input type="password" min="1" name="whatismybr_api_id" value="' . esc_attr( $api_key ) . '"/>';
                         } else {
                             echo '<input type="text" min="1" name="whatismybr_api_id" value="Premium Feature"' . esc_attr( $api_key ) . '" disabled style="background-color: #f1f1f1; color:red;"/>';
