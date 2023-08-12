@@ -4,7 +4,7 @@ Tags: Wordfence, Cloudflare, Security, Wordpress Security, Firewall
 Requires at least: 5.2
 Requires PHP: 7.4
 Tested up to: 6.2
-Stable tag: 1.3.6
+Stable tag: 1.3.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,31 @@ Usage Type: Get to know the type of entity using the blocked IP. This knowledge 
 ISP Information: Obtain details about the internet service provider of the blocked IP.
 
 Confidence Score: AbuseIPDB provides a confidence score that indicates how likely the IP is to engage in abusive behavior. This feature can be useful for prioritizing responses to threats.
+
+Pro Features:
+
+Integration with WhatIsMyBrowser.com API
+This plugin now features seamless integration with the WhatIsMyBrowser.com API, providing you with enhanced user agent analysis and detection capabilities. The WhatIsMyBrowser.com API allows you to obtain detailed information about user agents, including software, operating systems, and more. This integration empowers you to better understand and manage the traffic hitting your WordPress site.
+
+Benefits:
+Advanced User Agent Analysis: With the WhatIsMyBrowser.com API, you can gain deeper insights into the user agents accessing your website. This includes information about the software, operating systems, and more.
+
+Abusive User Detection: The plugin can now detect potentially abusive or malicious user agents based on the API's analysis. It flags user agents that may pose a security risk, helping you proactively secure your website.
+
+Automated Blocking: You can automatically block or manage potentially abusive user agents, safeguarding your website from potential threats. The user can send the ips that wishes to block to Cloudflare by clicking the button on each record.  
+
+How to Use:
+Obtain an API Key: To utilize this feature, you need an API key from WhatIsMyBrowser.com. You can obtain an API key by signing up for a free or premium account on their platform.
+
+API Key Integration: Once you have your API key, enter it into the plugin settings. This will enable the plugin to communicate with the WhatIsMyBrowser.com API.
+
+Enhanced User Agent Analysis: Upon activation, the plugin will start analyzing user agents hitting your site. The information gathered through the API integration will be displayed in the captured traffic data section of the plugin.
+
+Abusive User Detection: The plugin will automatically mark user agents that are identified as potentially abusive by the API. This enables you to take appropriate actions to protect your site.
+
+Please note that an API key is required for this feature to function effectively. Whether you choose a free or premium account on WhatIsMyBrowser.com, this integration will help you elevate your website's security and user agent analysis capabilities.
+
+To get started, simply sign up for an account on WhatIsMyBrowser.com, obtain your API key, and integrate it into the plugin settings.
 
 Security Benefits:
 
@@ -78,8 +103,9 @@ This plugin requires an active Wordfence and Cloudflare account. You also need t
 
 == Upgrade Notice ==
 
-= 1.3.6 =
-Added ips blocked from WordFence wfBlockedIPLog too
+= 1.3.7 =
+Various fixes
+Added Pro feature - Traffic inspection integration with whatsmybrowser.com API to identify malicious user agents. 
 
 == Changelog ==
 
@@ -109,3 +135,7 @@ Timezone fix
 
 = 1.3.6 =
 Added ips blocked from WordFence wfBlockedIPLog too
+
+= 1.3.7 =
+Various fixes
+Added Pro feature - Traffic inspection integration with whatsmybrowser.com API to identify malicious user agents. 

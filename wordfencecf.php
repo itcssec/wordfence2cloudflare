@@ -3,7 +3,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare PremiumPlus
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.6
+Version: 1.3.7
 
 Update URI: https://api.freemius.com
 Author: ITCS
@@ -59,7 +59,9 @@ if ( function_exists( 'wor_fs' ) ) {
         // Signal that SDK was initiated.
         do_action( 'wor_fs_loaded' );
     }
-    
+    if ( wor_fs()->is_plan( 'premiumplus' )){
+    include_once plugin_dir_path( __FILE__ ) . 'wtctraffic.php';
+    }
     include_once plugin_dir_path( __FILE__ ) . 'wtcipstable.php';
     // Add settings link to plugin page
     function wtc_add_settings_link( $links )
@@ -213,6 +215,15 @@ if ( function_exists( 'wor_fs' ) ) {
         wtc_render_ips_tab_content();
     }
     
+    function wtc_render_traffic_tab()
+    {
+        // Check if the user has the required capability
+        if ( !current_user_can( 'manage_options' ) ) {
+            wp_die( 'Access is not allowed.' );
+        }
+        wtc_render_traffic_page();
+    }
+    
     // Create the admin page
     function wtc_render_admin_page()
     {
@@ -230,8 +241,18 @@ if ( function_exists( 'wor_fs' ) ) {
         echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-settings' ? 'nav-tab-active' : '' ) ;
         ?>">Settings</a>
             <a href="?page=wtc-settings&tab=wtc-ips" class="nav-tab <?php 
-        echo  ( isset( $_GET['page'] ) && $_GET['tab'] === 'wtc-ips' ? 'nav-tab-active' : '' ) ;
+        echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-ips' ? 'nav-tab-active' : '' ) ;
         ?>">Blocked IPs</a>
+        <?php
+        if (wor_fs()->is_plan( 'premiumplus' )) {
+                    ?>
+        <a href="?page=wtc-settings&tab=wtc-traffic" class="nav-tab <?php 
+        echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-traffic' ? 'nav-tab-active' : '' ) ;
+        ?>">Captured Traffic Data
+</a>
+ <?php
+            }
+            ?>
         </h2>
 
         <!-- Display Tab Content -->
@@ -241,6 +262,10 @@ if ( function_exists( 'wor_fs' ) ) {
             case 'wtc-ips':
                 // Render the blocked IPs tab content
                 wtc_render_ips_tab();
+                break;
+            case 'wtc-traffic':
+                // Render the blocked IPs tab content
+                wtc_render_traffic_tab();
                 break;
             default:
                 // Render the settings tab content
@@ -295,6 +320,20 @@ if ( function_exists( 'wor_fs' ) ) {
         ?>" /></td>
                 </tr>
                 <tr valign="top">
+                    <th scope="row">Whatismybrowser API Key</th>
+                    <td>
+                        <?php 
+                        $api_key = get_option( 'whatismybr_api_id' );
+                        if (wor_fs()->is_plan( 'premiumplus', true )) {
+                            echo '<input type="password" min="1" name="whatismybr_api_id" value="' . esc_attr( $api_key ) . '"/>';
+                        } else {
+                            echo '<input type="text" min="1" name="whatismybr_api_id" value="Premium Feature"' . esc_attr( $api_key ) . '" disabled style="background-color: #f1f1f1; color:red;"/>';
+                            
+                        }
+                        ?>
+                    </td>
+                </tr>
+                <tr valign="top">
                     <th scope="row">Blocked Hits Threshold</th>
                     <td><input type="number" min="0" name="blocked_hits_threshold" value="<?php 
         echo  esc_attr( get_option( 'blocked_hits_threshold', 0 ) ) ;
@@ -310,6 +349,19 @@ if ( function_exists( 'wor_fs' ) ) {
                             <option value="account" <?php 
         selected( 'account', get_option( 'block_scope' ) );
         ?>>Entire Account</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row">Block Mode</th>
+                    <td>
+                        <select name="block_mode">
+                            <option value="block" <?php 
+        selected( 'block', get_option( 'block_mode' ) );
+        ?>>Block</option>
+                            <option value="managed_challenge" <?php 
+        selected( 'managed_challenge', get_option( 'block_mode' ) );
+        ?>>Managed Challenge</option>
                         </select>
                     </td>
                 </tr>
@@ -401,8 +453,10 @@ if ( function_exists( 'wor_fs' ) ) {
         register_setting( 'wtc-settings-group', 'cloudflare_zone_id' );
         register_setting( 'wtc-settings-group', 'cloudflare_account_id' );
         register_setting( 'wtc-settings-group', 'abuseipdb_api_id' );
+        register_setting( 'wtc-settings-group', 'whatismybr_api_id' );
         register_setting( 'wtc-settings-group', 'blocked_hits_threshold' );
         register_setting( 'wtc-settings-group', 'block_scope' );
+        register_setting( 'wtc-settings-group', 'block_mode' );
         register_setting( 'wtc-settings-group', 'cron_interval' );
     }
     
@@ -515,6 +569,7 @@ if ( function_exists( 'wor_fs' ) ) {
         $email = get_option( 'cloudflare_email' );
         $key = get_option( 'cloudflare_key' );
         $block_scope = get_option( 'block_scope', 'domain' );
+        $block_mode = get_option( 'block_mode', 'block' );
         $zone_id = get_option( 'cloudflare_zone_id' );
         $ips_to_send = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE isSent = 0", OBJECT );
         
@@ -539,7 +594,7 @@ if ( function_exists( 'wor_fs' ) ) {
                     'Content-Type' => 'application/json',
                 ),
                     'body'    => json_encode( array(
-                    'mode'          => 'block',
+                    'mode'          => $block_mode,
                     'configuration' => array(
                     'target' => 'ip',
                     'value'  => $ip_address,
