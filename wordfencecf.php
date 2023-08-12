@@ -3,7 +3,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare PremiumPlus
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.7
+Version: 1.3.8
 
 Update URI: https://api.freemius.com
 Author: ITCS
