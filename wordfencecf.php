@@ -36,7 +36,7 @@ if ( function_exists( 'wor_fs' ) ) {
                     'slug'           => 'wordfence2cloudflare',
                     'type'           => 'plugin',
                     'public_key'     => 'pk_ed1eec939e12cfd4b144c98c2adae',
-                    'is_premium'     => true,
+                    'is_premium'     => false,
                     'premium_suffix' => 'PremiumPlus',
                     'has_addons'     => false,
                     'has_paid_plans' => true,
