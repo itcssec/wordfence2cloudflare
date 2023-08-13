@@ -4,7 +4,7 @@ Tags: Wordfence, Cloudflare, Security, Wordpress Security, Firewall
 Requires at least: 5.2
 Requires PHP: 7.4
 Tested up to: 6.2
-Stable tag: 1.3.8
+Stable tag: 1.3.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,7 +103,7 @@ This plugin requires an active Wordfence and Cloudflare account. You also need t
 
 == Upgrade Notice ==
 
-= 1.3.8 =
+= 1.3.9 =
 Various fixes
 
 == Changelog ==
@@ -140,4 +140,7 @@ Various fixes
 Added Pro feature - Traffic inspection integration with whatsmybrowser.com API to identify malicious user agents. 
 
 = 1.3.8 =
+Various fixes
+
+= 1.3.9 =
 Various fixes

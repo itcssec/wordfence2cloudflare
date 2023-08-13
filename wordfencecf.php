@@ -3,7 +3,7 @@
 /*
 Plugin Name: Wordfence2Cloudflare PremiumPlus
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
-Version: 1.3.8
+Version: 1.3.9
 
 Update URI: https://api.freemius.com
 Author: ITCS
@@ -59,8 +59,9 @@ if ( function_exists( 'wor_fs' ) ) {
         // Signal that SDK was initiated.
         do_action( 'wor_fs_loaded' );
     }
-    if ( wor_fs()->is__premium_only()){
-    include_once plugin_dir_path( __FILE__ ) . 'wtctraffic.php';
+    
+    if ( wor_fs()->is__premium_only() ) {
+        include_once plugin_dir_path( __FILE__ ) . 'wtctraffic.php';
     }
     include_once plugin_dir_path( __FILE__ ) . 'wtcipstable.php';
     // Add settings link to plugin page
@@ -77,7 +78,9 @@ if ( function_exists( 'wor_fs' ) ) {
     {
         global  $wpdb ;
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name ) {
+        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
+        
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic) {
             wtc_create_custom_table();
         }
     }
@@ -89,11 +92,27 @@ if ( function_exists( 'wor_fs' ) ) {
         global  $wpdb ;
         $charset_collate = $wpdb->get_charset_collate();
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
         
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name ) {
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic) {
             $sql = "CREATE TABLE {$table_name} (\r\n\t\t\tid INT(11) NOT NULL AUTO_INCREMENT,\r\n\t\t\tblockedTime DATETIME NOT NULL,\r\n\t\t\tblockedHits INT(11) NOT NULL,\r\n\t\t\tip VARCHAR(45) NOT NULL,\r\n\t\t\tcountryCode VARCHAR(2) NOT NULL,\r\n\t\t\tusageType VARCHAR(64) NOT NULL,\r\n\t\t\tisp TEXT NOT NULL,\r\n\t\t\tconfidenceScore TEXT NOT NULL,\r\n\t\t\tcfResponse TEXT NOT NULL,\r\n\t\t\tisSent TINYINT(1) NOT NULL DEFAULT '0',\r\n\t\t\tPRIMARY KEY (id)\r\n\t\t) {$charset_collate};";
             require_once ABSPATH . 'wp-admin/includes/upgrade.php';
             dbDelta( $sql );
+            
+            $sql = "CREATE TABLE $table_name_traffic (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            timestamp datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+            request_method varchar(10) NOT NULL,
+            request_uri varchar(255) NOT NULL,
+            user_agent varchar(255) NOT NULL,
+            ip_address varchar(45) NOT NULL,
+            is_abusive tinyint(1) NOT NULL DEFAULT 0, -- New column
+            sent_to_cf tinyint(1) NOT NULL DEFAULT 0, -- New column
+            PRIMARY KEY  (id)
+        ) $charset_collate;";
+    
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        dbDelta( $sql );
         }
     
     }
@@ -103,8 +122,10 @@ if ( function_exists( 'wor_fs' ) ) {
     {
         global  $wpdb ;
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
         // replace with your table name
         $wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
+        $wpdb->query( "DROP TABLE IF EXISTS {$table_name_traffic}" );
     }
     
     // Not like register_uninstall_hook(), you do NOT have to use a static function.
@@ -115,16 +136,7 @@ if ( function_exists( 'wor_fs' ) ) {
         global  $wpdb ;
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option( 'blocked_hits_threshold', 0 );
-        $blocked_ips = $wpdb->get_results( "
-		SELECT IP, unixday as blockedTime, blockCount as blockedHits
-		FROM {$wpdb->prefix}wfblockediplog
-		WHERE blockCount >= {$threshold}
-		UNION
-		SELECT IP, blockedTime, blockedHits
-		FROM {$wpdb->prefix}wfblocks7
-		WHERE blockedHits >= {$threshold}
-	", OBJECT );
-
+        $blocked_ips = $wpdb->get_results( "\r\n\t\tSELECT IP, unixday as blockedTime, blockCount as blockedHits\r\n\t\tFROM {$wpdb->prefix}wfblockediplog\r\n\t\tWHERE blockCount >= {$threshold}\r\n\t\tUNION\r\n\t\tSELECT IP, blockedTime, blockedHits\r\n\t\tFROM {$wpdb->prefix}wfblocks7\r\n\t\tWHERE blockedHits >= {$threshold}\r\n\t", OBJECT );
         if ( $blocked_ips ) {
             foreach ( $blocked_ips as $ip ) {
                 $ip_address = inet_ntop( $ip->IP );
@@ -243,16 +255,18 @@ if ( function_exists( 'wor_fs' ) ) {
             <a href="?page=wtc-settings&tab=wtc-ips" class="nav-tab <?php 
         echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-ips' ? 'nav-tab-active' : '' ) ;
         ?>">Blocked IPs</a>
-        <?php
-        if (wor_fs()->is__premium_only()) {
-                    ?>
-        <a href="?page=wtc-settings&tab=wtc-traffic" class="nav-tab <?php 
-        echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-traffic' ? 'nav-tab-active' : '' ) ;
-        ?>">Captured Traffic Data
-</a>
- <?php
-            }
+        <?php 
+        
+        if ( wor_fs()->is__premium_only() ) {
             ?>
+        <a href="?page=wtc-settings&tab=wtc-traffic" class="nav-tab <?php 
+            echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-traffic' ? 'nav-tab-active' : '' ) ;
+            ?>">Captured Traffic Data
+</a>
+ <?php 
+        }
+        
+        ?>
         </h2>
 
         <!-- Display Tab Content -->
@@ -323,14 +337,15 @@ if ( function_exists( 'wor_fs' ) ) {
                     <th scope="row">Whatismybrowser API Key</th>
                     <td>
                         <?php 
-                        $api_key = get_option( 'whatismybr_api_id' );
-                        if (wor_fs()->is__premium_only()) {
-                            echo '<input type="password" min="1" name="whatismybr_api_id" value="' . esc_attr( $api_key ) . '"/>';
-                        } else {
-                            echo '<input type="text" min="1" name="whatismybr_api_id" value="Premium Feature"' . esc_attr( $api_key ) . '" disabled style="background-color: #f1f1f1; color:red;"/>';
-                            
-                        }
-                        ?>
+        $api_key = get_option( 'whatismybr_api_id' );
+        
+        if ( wor_fs()->is__premium_only() ) {
+            echo  '<input type="password" min="1" name="whatismybr_api_id" value="' . esc_attr( $api_key ) . '"/>' ;
+        } else {
+            echo  '<input type="text" min="1" name="whatismybr_api_id" value="Premium Feature"' . esc_attr( $api_key ) . '" disabled style="background-color: #f1f1f1; color:red;"/>' ;
+        }
+        
+        ?>
                     </td>
                 </tr>
                 <tr valign="top">
@@ -528,7 +543,6 @@ if ( function_exists( 'wor_fs' ) ) {
         $last_processed_time = get_option( 'wtc_last_processed_time', 0 );
         // Default to 0 if not set
         // Convert last processed time to the same format as the blockedTime column
-        
         $blocked_ips = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE isSent = 0", OBJECT );
         //$wpdb->get_results(
         //"SELECT * FROM {$wpdb->prefix}wfblocks7 WHERE blockedTime > UNIX_TIMESTAMP('{$last_processed_time_formatted}') AND blockedHits >= {$threshold}",
@@ -733,7 +747,6 @@ if ( function_exists( 'wor_fs' ) ) {
             $last_processed_time = get_option( 'wtc_last_processed_time', 0 );
             // Default to 0 if not set
             // Convert last processed time to the same format as the blockedTime column
-            
             $blocked_ips = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE isSent = 0", OBJECT );
             error_log( "SQL Query: " . $wpdb->last_query );
             $timezone = get_option( 'timezone_string' );
