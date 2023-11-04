@@ -1,4 +1,4 @@
-=== Wordfence2Cloudflare ===
+=== Blocked IPs for Wordfence to Cloudflare ===
 Contributors: ITCS
 Tags: Wordfence, Cloudflare, Security, Wordpress Security, Firewall
 Requires at least: 5.2
