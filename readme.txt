@@ -106,41 +106,42 @@ This plugin requires an active Wordfence and Cloudflare account. You also need t
 = 1.3.9 =
 Various fixes
 
+
 == Changelog ==
 
-= 1.2 =
-Added new functionalities to work with cloudflare including a table and an extra tab
-
-= 1.2.1 =
-New options on the blocked ips table
-
-= 1.3 =
-The user now can remove a blocked ip either from the local list or from both the Cloudflare and the plugin blocked list. 
-
-= 1.3.1 =
-Freemius Integration
-
-= 1.3.2 =
-Minor fixes
-
-= 1.3.3 =
-AbuseIP Database Integration
-
-= 1.3.4 =
-Timezone fix
-
-= 1.3.5 =
-Timezone fix
-
-= 1.3.6 =
-Added ips blocked from WordFence wfBlockedIPLog too
-
-= 1.3.7 =
-Various fixes
-Added Pro feature - Traffic inspection integration with whatsmybrowser.com API to identify malicious user agents. 
+= 1.3.9 =
+- Fix: Various unspecified patches and improvements.
 
 = 1.3.8 =
-Various fixes
+- Fix: Additional minor fixes to improve functionality and performance.
 
-= 1.3.9 =
-Various fixes
+= 1.3.7 =
+- Fix: Various unspecified patches and improvements.
+
+= 1.3.6 =
+- Feature: Added Pro feature - Traffic inspection integration with whatsmybrowser.com API to identify malicious user agents.
+- Fix: Various fixes to improve stability and performance.
+
+= 1.3.5 =
+- Feature: Added integration to include ips blocked from WordFence wfBlockedIPLog.
+
+= 1.3.4 =
+- Fix: Corrections to the timezone functionality to address issues with incorrect times being displayed.
+
+= 1.3.3 =
+- Feature: AbuseIP Database Integration to enhance security measures.
+
+= 1.3.2 =
+- Fix: Minor bug fixes and performance improvements.
+
+= 1.3.1 =
+- Feature: Freemius Integration for enhanced analytics and feature management.
+
+= 1.3.0 =
+- Feature: Added the ability for the user to remove a blocked IP either from the local list or from both the Cloudflare and the plugin's blocked list.
+
+= 1.2.1 =
+- Feature: New options added to the blocked IPs table for better management.
+
+= 1.2.0 =
+- Feature: Introduced new functionalities for Cloudflare integration, including a new table and an extra tab for enhanced control.
