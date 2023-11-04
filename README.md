@@ -1,4 +1,4 @@
-# Wordfence to Cloudflare
+# Blocked IPs for Wordfence to Cloudflare
 Description: This plugin enhances the security of your WordPress website by seamlessly integrating Wordfence and Cloudflare. It automatically synchronizes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list, providing an additional layer of protection against malicious traffic.
 
 # Features:
