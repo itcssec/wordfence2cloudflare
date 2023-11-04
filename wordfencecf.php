@@ -1,7 +1,7 @@
 <?php
 
 /*
-Plugin Name: Wordfence2Cloudflare PremiumPlus
+Plugin Name: Blocked IPs for Wordfence to Cloudflare PremiumPlus
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
 Version: 1.3.9
 
@@ -9,7 +9,7 @@ Update URI: https://api.freemius.com
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
-Text Domain: wordfence2cloudflare
+Text Domain: blocked-ips-for-wordfence-to-cloudflare
 */
 
 if ( !defined( 'ABSPATH' ) ) {
