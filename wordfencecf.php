@@ -77,7 +77,7 @@ if ( function_exists( 'wor_fs' ) ) {
     {
         global  $wpdb ;
         $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
-        $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
+        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
         if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic ) {
             wtcb_create_custom_table();
         }
@@ -90,7 +90,7 @@ if ( function_exists( 'wor_fs' ) ) {
         global  $wpdb ;
         $charset_collate = $wpdb->get_charset_collate();
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
+        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
         
         if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic ) {
             $sql = "CREATE TABLE {$table_name} (\r\n\t\t\tid INT(11) NOT NULL AUTO_INCREMENT,\r\n\t\t\tblockedTime DATETIME NOT NULL,\r\n\t\t\tblockedHits INT(11) NOT NULL,\r\n\t\t\tip VARCHAR(45) NOT NULL,\r\n\t\t\tcountryCode VARCHAR(2) NOT NULL,\r\n\t\t\tusageType VARCHAR(64) NOT NULL,\r\n\t\t\tisp TEXT NOT NULL,\r\n\t\t\tconfidenceScore TEXT NOT NULL,\r\n\t\t\tcfResponse TEXT NOT NULL,\r\n\t\t\tisSent TINYINT(1) NOT NULL DEFAULT '0',\r\n\t\t\tPRIMARY KEY (id)\r\n\t\t) {$charset_collate};";
@@ -108,7 +108,7 @@ if ( function_exists( 'wor_fs' ) ) {
     {
         global  $wpdb ;
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
+        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
         // replace with your table name
         $wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
         $wpdb->query( "DROP TABLE IF EXISTS {$table_name_traffic}" );
@@ -379,11 +379,11 @@ if ( function_exists( 'wor_fs' ) ) {
             <table class="form-table">
                 <tr valign="top">
             <th scope="row">Last Cron Run:</th>
-            <td><?php echo esc_html( get_option( 'wtcb_last_processed_time' ) ); ?></td>
+            <td><?php echo esc_html( get_option( 'wtc_last_processed_time' ) ); ?></td>
         </tr>
         <tr valign="top">
             <th scope="row">IPs Processed:</th>
-            <td><?php echo esc_html( get_option( 'wtcb_processed_ips_count' ) ); ?></td>
+            <td><?php echo esc_html( get_option( 'wtc_processed_ips_count' ) ); ?></td>
         </tr>
             </table>
 
