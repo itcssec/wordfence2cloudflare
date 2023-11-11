@@ -2,7 +2,7 @@
 // Render Blocked IPs Tab Content
 function wtcb_render_ips_tab_content() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+    $table_name = $wpdb->prefix . 'wtc_blocked_ips';
 
     $ips = $wpdb->get_results("SELECT * FROM $table_name");
 

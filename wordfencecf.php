@@ -89,7 +89,7 @@ if ( function_exists( 'wor_fs' ) ) {
     {
         global  $wpdb ;
         $charset_collate = $wpdb->get_charset_collate();
-        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
         
         if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic ) {
@@ -107,7 +107,7 @@ if ( function_exists( 'wor_fs' ) ) {
     function wor_fs_uninstall_cleanup()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
         // replace with your table name
         $wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
@@ -120,7 +120,7 @@ if ( function_exists( 'wor_fs' ) ) {
     function wtcb_fetch_and_store_blocked_ips()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option( 'blocked_hits_threshold', 0 );
         $blocked_ips = $wpdb->get_results( "\r\n\t\tSELECT IP, unixday as blockedTime, blockCount as blockedHits\r\n\t\tFROM {$wpdb->prefix}wfblockediplog\r\n\t\tWHERE blockCount >= {$threshold}\r\n\t\tUNION\r\n\t\tSELECT IP, blockedTime, blockedHits\r\n\t\tFROM {$wpdb->prefix}wfblocks7\r\n\t\tWHERE blockedHits >= {$threshold}\r\n\t", OBJECT );
         if ( $blocked_ips ) {
@@ -177,7 +177,7 @@ if ( function_exists( 'wor_fs' ) ) {
     function wtcb_update_cloudflare_response( $ip_id, $cf_response )
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $wpdb->update(
             $table_name,
             array(
@@ -506,7 +506,7 @@ if ( function_exists( 'wor_fs' ) ) {
     function wtcb_check_new_blocked_ips()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option( 'blocked_hits_threshold', 0 );
         $last_processed_time = get_option( 'wtcb_last_processed_time', 0 );
         // Default to 0 if not set
@@ -547,7 +547,7 @@ if ( function_exists( 'wor_fs' ) ) {
     function wtcb_add_ips_to_cloudflare()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $email = get_option( 'cloudflare_email' );
         $key = get_option( 'cloudflare_key' );
         $block_scope = get_option( 'block_scope', 'domain' );
@@ -650,7 +650,7 @@ if ( function_exists( 'wor_fs' ) ) {
     //add_action('wtcb_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
     function wtcb_getipinfo( $ip_address ) {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+    $table_name = $wpdb->prefix . 'wtc_blocked_ips';
     $abuseipdb_account_id = get_option('abuseipdb_api_id');
     
     // Prepare the request headers for the HTTP API call
@@ -709,7 +709,7 @@ if ( function_exists( 'wor_fs' ) ) {
         if ( isset( $_POST['wtcb_run_process'] ) ) {
             global  $wpdb ;
             wtcb_fetch_and_store_blocked_ips();
-            $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+            $table_name = $wpdb->prefix . 'wtc_blocked_ips';
             $threshold = get_option( 'blocked_hits_threshold', 0 );
             $last_processed_time = get_option( 'wtcb_last_processed_time', 0 );
             // Default to 0 if not set
@@ -820,7 +820,7 @@ if ( function_exists( 'wor_fs' ) ) {
 		if (!current_user_can('manage_options')) {
 			wp_send_json_error('Access is not allowed.'); 
 		}
-		$table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+		$table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $ids = isset($_POST['ids']) ? (array) $_POST['ids'] : []; 
 		$ids = array_map('absint', $ids); 
         if (count($ids) > 0) { 
