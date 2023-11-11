@@ -73,6 +73,24 @@ Seamless Integration: The plugin seamlessly integrates with your existing Wordfe
 
 By utilizing the combined power of Wordfence and Cloudflare, this plugin helps safeguard your WordPress website from malicious IPs more effectively. It automates the synchronization process, reduces server load, and provides customizable security settings, all while ensuring the secure storage of your Cloudflare key. With Wordfence to Cloudflare, you can enhance the security posture of your website and protect it from a wide range of security threats.
 
+== Third-Party Services ==
+
+This plugin communicates with the following third-party services:
+
+- Cloudflare API: To synchronize blocked IP addresses with Cloudflare's firewall, the plugin makes calls to Cloudflare's API. By using this plugin, you authorize it to transfer the necessary IP data between your website and Cloudflare.
+  - Cloudflare's Terms of Service: https://www.cloudflare.com/terms/
+  - Cloudflare's Privacy Policy: https://www.cloudflare.com/privacypolicy/
+
+- AbuseIPDB API: For obtaining detailed information about the blocked IPs, the plugin can optionally make calls to the AbuseIPDB API if this feature is enabled.
+  - AbuseIPDB's Terms of Service: https://www.abuseipdb.com/legal
+  - AbuseIPDB's Privacy Policy: https://www.abuseipdb.com/privacy
+
+- WhatIsMyBrowser.com API: The plugin features integration with WhatIsMyBrowser.com for advanced user agent analysis. It requires an API key from WhatIsMyBrowser.com which you will need to obtain and configure in the plugin settings.
+  - WhatIsMyBrowser.com Terms of Service: https://www.whatismybrowser.com/about/legal/
+  - WhatIsMyBrowser.com Privacy Policy: https://www.whatismybrowser.com/about/legal/
+
+Please note that by using these external services, you are agreeing to their respective terms and privacy policies. Ensure that you have the necessary rights and permissions to share data with these services in compliance with data protection laws applicable to your website's audience.
+
 
 == Installation: ==
 

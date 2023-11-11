@@ -5,7 +5,6 @@ Plugin Name: Blocked IPs for Wordfence to Cloudflare PremiumPlus
 Description: This plugin takes blocked IPs from Wordfence and adds them to the Cloudflare firewall blocked list.
 Version: 1.3.9
 
-Update URI: https://api.freemius.com
 Author: ITCS
 Author URI: https://itcybersecurity.gr/
 License: GPLv2 or later
@@ -65,64 +64,51 @@ if ( function_exists( 'wor_fs' ) ) {
     }
     include_once plugin_dir_path( __FILE__ ) . 'wtcipstable.php';
     // Add settings link to plugin page
-    function wtc_add_settings_link( $links )
+    function wtcb_add_settings_link( $links )
     {
         $settings_link = '<a href="' . admin_url( 'options-general.php?page=wtc-settings' ) . '">' . __( 'Settings' ) . '</a>';
         array_push( $links, $settings_link );
         return $links;
     }
     
-    add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wtc_add_settings_link' );
+    add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wtcb_add_settings_link' );
     // Check if the custom table exists and create it if not
-    function wtc_check_custom_table()
+    function wtcb_check_custom_table()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
-        
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic) {
-            wtc_create_custom_table();
+        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic ) {
+            wtcb_create_custom_table();
         }
     }
     
-    add_action( 'init', 'wtc_check_custom_table' );
+    add_action( 'init', 'wtcb_check_custom_table' );
     // Create custom table during plugin activation
-    function wtc_create_custom_table()
+    function wtcb_create_custom_table()
     {
         global  $wpdb ;
         $charset_collate = $wpdb->get_charset_collate();
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
+        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
         
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic) {
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) != $table_name || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name_traffic}'" ) != $table_name_traffic ) {
             $sql = "CREATE TABLE {$table_name} (\r\n\t\t\tid INT(11) NOT NULL AUTO_INCREMENT,\r\n\t\t\tblockedTime DATETIME NOT NULL,\r\n\t\t\tblockedHits INT(11) NOT NULL,\r\n\t\t\tip VARCHAR(45) NOT NULL,\r\n\t\t\tcountryCode VARCHAR(2) NOT NULL,\r\n\t\t\tusageType VARCHAR(64) NOT NULL,\r\n\t\t\tisp TEXT NOT NULL,\r\n\t\t\tconfidenceScore TEXT NOT NULL,\r\n\t\t\tcfResponse TEXT NOT NULL,\r\n\t\t\tisSent TINYINT(1) NOT NULL DEFAULT '0',\r\n\t\t\tPRIMARY KEY (id)\r\n\t\t) {$charset_collate};";
             require_once ABSPATH . 'wp-admin/includes/upgrade.php';
             dbDelta( $sql );
-            
-            $sql = "CREATE TABLE $table_name_traffic (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            timestamp datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-            request_method varchar(10) NOT NULL,
-            request_uri varchar(255) NOT NULL,
-            user_agent varchar(255) NOT NULL,
-            ip_address varchar(45) NOT NULL,
-            is_abusive tinyint(1) NOT NULL DEFAULT 0, -- New column
-            sent_to_cf tinyint(1) NOT NULL DEFAULT 0, -- New column
-            PRIMARY KEY  (id)
-        ) $charset_collate;";
-    
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        dbDelta( $sql );
+            $sql = "CREATE TABLE {$table_name_traffic} (\r\n            id mediumint(9) NOT NULL AUTO_INCREMENT,\r\n            timestamp datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\r\n            request_method varchar(10) NOT NULL,\r\n            request_uri varchar(255) NOT NULL,\r\n            user_agent varchar(255) NOT NULL,\r\n            ip_address varchar(45) NOT NULL,\r\n            is_abusive tinyint(1) NOT NULL DEFAULT 0, -- New column\r\n            sent_to_cf tinyint(1) NOT NULL DEFAULT 0, -- New column\r\n            PRIMARY KEY  (id)\r\n        ) {$charset_collate};";
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            dbDelta( $sql );
         }
     
     }
     
-    register_activation_hook( __FILE__, 'wtc_create_custom_table' );
+    register_activation_hook( __FILE__, 'wtcb_create_custom_table' );
     function wor_fs_uninstall_cleanup()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $table_name_traffic = $wpdb->prefix . 'wtc_traffic_data';
+        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $table_name_traffic = $wpdb->prefix . 'wtcb_traffic_data';
         // replace with your table name
         $wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
         $wpdb->query( "DROP TABLE IF EXISTS {$table_name_traffic}" );
@@ -131,10 +117,10 @@ if ( function_exists( 'wor_fs' ) ) {
     // Not like register_uninstall_hook(), you do NOT have to use a static function.
     wor_fs()->add_action( 'after_uninstall', 'wor_fs_uninstall_cleanup' );
     // Fetch blocked IPs from Wordfence and add them to the custom table
-    function wtc_fetch_and_store_blocked_ips()
+    function wtcb_fetch_and_store_blocked_ips()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
         $threshold = get_option( 'blocked_hits_threshold', 0 );
         $blocked_ips = $wpdb->get_results( "\r\n\t\tSELECT IP, unixday as blockedTime, blockCount as blockedHits\r\n\t\tFROM {$wpdb->prefix}wfblockediplog\r\n\t\tWHERE blockCount >= {$threshold}\r\n\t\tUNION\r\n\t\tSELECT IP, blockedTime, blockedHits\r\n\t\tFROM {$wpdb->prefix}wfblocks7\r\n\t\tWHERE blockedHits >= {$threshold}\r\n\t", OBJECT );
         if ( $blocked_ips ) {
@@ -186,12 +172,12 @@ if ( function_exists( 'wor_fs' ) ) {
         }
     }
     
-    add_action( 'wtc_check_new_blocked_ips', 'wtc_fetch_and_store_blocked_ips' );
+    add_action( 'wtcb_check_new_blocked_ips', 'wtcb_fetch_and_store_blocked_ips' );
     // Update Cloudflare response in the custom table
-    function wtc_update_cloudflare_response( $ip_id, $cf_response )
+    function wtcb_update_cloudflare_response( $ip_id, $cf_response )
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
         $wpdb->update(
             $table_name,
             array(
@@ -205,68 +191,54 @@ if ( function_exists( 'wor_fs' ) ) {
         );
     }
     
-    function wtc_menu()
+    function wtcb_menu()
     {
         add_options_page(
             'WTC Settings',
             'WTC Settings',
             'manage_options',
             'wtc-settings',
-            'wtc_render_admin_page'
+            'wtcb_render_admin_page'
         );
     }
     
-    add_action( 'admin_menu', 'wtc_menu' );
+    add_action( 'admin_menu', 'wtcb_menu' );
     // Render Blocked IPs Tab
-    function wtc_render_ips_tab()
+    function wtcb_render_ips_tab()
     {
         // Check if the user has the required capability
         if ( !current_user_can( 'manage_options' ) ) {
             wp_die( 'Access is not allowed.' );
         }
-        wtc_render_ips_tab_content();
+        wtcb_render_ips_tab_content();
     }
     
-    function wtc_render_traffic_tab()
+    function wtcb_render_traffic_tab()
     {
         // Check if the user has the required capability
         if ( !current_user_can( 'manage_options' ) ) {
             wp_die( 'Access is not allowed.' );
         }
-        wtc_render_traffic_page();
+        wtcb_render_traffic_page();
     }
     
     // Create the admin page
-    function wtc_render_admin_page()
-    {
-        // Check if the user has the required capability
-        if ( !current_user_can( 'manage_options' ) ) {
-            wp_die( 'Access is not allowed.' );
-        }
-        ?>
+    function wtcb_render_admin_page()
+{
+    // Check if the user has the required capability
+    if ( !current_user_can( 'manage_options' ) ) {
+        wp_die( 'Access is not allowed.' );
+    }
+    ?>
     <div class="wrap">
         <h1>Wordfence to Cloudflare</h1>
-
-        <!-- Add Tabs -->
+        <!-- Output escaped tab content based on the condition -->
         <h2 class="nav-tab-wrapper">
-            <a href="?page=wtc-settings" class="nav-tab <?php 
-        echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-settings' ? 'nav-tab-active' : '' ) ;
-        ?>">Settings</a>
-            <a href="?page=wtc-settings&tab=wtc-ips" class="nav-tab <?php 
-        echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-ips' ? 'nav-tab-active' : '' ) ;
-        ?>">Blocked IPs</a>
-        <?php 
-        
-        if ( wor_fs()->is__premium_only() ) {
-            ?>
-        <a href="?page=wtc-settings&tab=wtc-traffic" class="nav-tab <?php 
-            echo  ( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-traffic' ? 'nav-tab-active' : '' ) ;
-            ?>">Captured Traffic Data
-</a>
- <?php 
-        }
-        
-        ?>
+            <a href="?page=wtc-settings" class="nav-tab <?php echo esc_attr( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-settings' ? 'nav-tab-active' : '' ); ?>">Settings</a>
+            <a href="?page=wtc-settings&tab=wtc-ips" class="nav-tab <?php echo esc_attr( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-ips' ? 'nav-tab-active' : '' ); ?>">Blocked IPs</a>
+            <?php if ( wor_fs()->is__premium_only() ) : ?>
+                <a href="?page=wtc-settings&tab=wtc-traffic" class="nav-tab <?php echo esc_attr( isset( $_GET['page'] ) && $_GET['page'] === 'wtc-traffic' ? 'nav-tab-active' : '' ); ?>">Captured Traffic Data</a>
+            <?php endif; ?>
         </h2>
 
         <!-- Display Tab Content -->
@@ -275,15 +247,15 @@ if ( function_exists( 'wor_fs' ) ) {
         switch ( $active_tab ) {
             case 'wtc-ips':
                 // Render the blocked IPs tab content
-                wtc_render_ips_tab();
+                wtcb_render_ips_tab();
                 break;
             case 'wtc-traffic':
                 // Render the blocked IPs tab content
-                wtc_render_traffic_tab();
+                //wtcb_render_traffic_tab();
                 break;
             default:
                 // Render the settings tab content
-                wtc_render_settings_tab();
+                wtcb_render_settings_tab();
                 break;
         }
         ?>
@@ -292,7 +264,7 @@ if ( function_exists( 'wor_fs' ) ) {
     }
     
     // Create the admin page
-    function wtc_render_settings_tab()
+    function wtcb_render_settings_tab()
     {
         ?>
     <div class="wrap">
@@ -406,17 +378,13 @@ if ( function_exists( 'wor_fs' ) ) {
 
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row">Last Cron Run:</th>
-                    <td><?php 
-        echo  get_option( 'wtc_last_processed_time' ) ;
-        ?></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">IPs Processed:</th>
-                    <td><?php 
-        echo  get_option( 'wtc_processed_ips_count' ) ;
-        ?></td>
-                </tr>
+            <th scope="row">Last Cron Run:</th>
+            <td><?php echo esc_html( get_option( 'wtcb_last_processed_time' ) ); ?></td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">IPs Processed:</th>
+            <td><?php echo esc_html( get_option( 'wtcb_processed_ips_count' ) ); ?></td>
+        </tr>
             </table>
 
             <?php 
@@ -424,43 +392,43 @@ if ( function_exists( 'wor_fs' ) ) {
         ?>
         </form>
         <form method="post" action="<?php 
-        echo  esc_url( admin_url( 'admin-post.php?action=wtc_run_process' ) ) ;
+        echo  esc_url( admin_url( 'admin-post.php?action=wtcb_run_process' ) ) ;
         ?>">
             <?php 
-        wp_nonce_field( 'wtc_run_process_action', 'wtc_run_process_nonce' );
+        wp_nonce_field( 'wtcb_run_process_action', 'wtcb_run_process_nonce' );
         ?>
-            <button type="submit" name="wtc_run_process" class="button button-primary">Run Process</button>
+            <button type="submit" name="wtcb_run_process" class="button button-primary">Run Process</button>
         </form>
         <br></br>
         <form method="post" action="<?php 
         echo  esc_url( admin_url( 'admin-post.php' ) ) ;
         ?>">
             <?php 
-        wp_nonce_field( 'wtc_clear_data_action', 'wtc_clear_data_nonce' );
+        wp_nonce_field( 'wtcb_clear_data_action', 'wtcb_clear_data_nonce' );
         ?>
-            <input type="hidden" name="action" value="wtc_clear_data">
-            <button type="submit" name="wtc_clear_data" class="button button-secondary">Clear Data</button>
+            <input type="hidden" name="action" value="wtcb_clear_data">
+            <button type="submit" name="wtcb_clear_data" class="button button-secondary">Clear Data</button>
         </form>
     </div>
     <?php 
     }
     
-    function wtc_clear_data()
+    function wtcb_clear_data()
     {
         
-        if ( isset( $_POST['wtc_clear_data'] ) && check_admin_referer( 'wtc_clear_data_action', 'wtc_clear_data_nonce' ) ) {
-            delete_option( 'wtc_last_processed_time' );
-            delete_option( 'wtc_processed_ips_count' );
+        if ( isset( $_POST['wtcb_clear_data'] ) && check_admin_referer( 'wtcb_clear_data_action', 'wtcb_clear_data_nonce' ) ) {
+            delete_option( 'wtcb_last_processed_time' );
+            delete_option( 'wtcb_processed_ips_count' );
             wp_redirect( admin_url( 'admin.php?page=wtc-settings' ) );
             exit;
         }
     
     }
     
-    add_action( 'admin_post_wtc_clear_data', 'wtc_clear_data' );
+    add_action( 'admin_post_wtcb_clear_data', 'wtcb_clear_data' );
     // Initialize settings only on our options page
     // Initialize settings
-    function wtc_options_init()
+    function wtcb_options_init()
     {
         // Register settings
         register_setting( 'wtc-settings-group', 'cloudflare_email' );
@@ -475,8 +443,8 @@ if ( function_exists( 'wor_fs' ) ) {
         register_setting( 'wtc-settings-group', 'cron_interval' );
     }
     
-    add_action( 'admin_init', 'wtc_options_init' );
-    function wtc_handle_option_update()
+    add_action( 'admin_init', 'wtcb_options_init' );
+    function wtcb_handle_option_update()
     {
         $current_screen = get_current_screen();
         if ( $current_screen->id !== "toplevel_page_wtc-settings" ) {
@@ -484,29 +452,29 @@ if ( function_exists( 'wor_fs' ) ) {
         }
         // If the options are set, update the wp-config.php file
         if ( get_option( 'cloudflare_email' ) && get_option( 'cloudflare_key' ) ) {
-            wtc_update_wp_config( get_option( 'cloudflare_email' ), get_option( 'cloudflare_key' ) );
+            wtcb_update_wp_config( get_option( 'cloudflare_email' ), get_option( 'cloudflare_key' ) );
         }
     }
     
-    add_action( 'admin_enqueue_scripts', 'wtc_handle_option_update' );
+    add_action( 'admin_enqueue_scripts', 'wtcb_handle_option_update' );
     // Update wp-config.php on settings update
     function update_wp_config_on_save( $option_name )
     {
         // If the updated options are 'cloudflare_email' or 'cloudflare_key', update the wp-config.php file
         if ( 'cloudflare_email' == $option_name || 'cloudflare_key' == $option_name ) {
             if ( get_option( 'cloudflare_email' ) && get_option( 'cloudflare_key' ) ) {
-                wtc_update_wp_config( get_option( 'cloudflare_email' ), get_option( 'cloudflare_key' ) );
+                wtcb_update_wp_config( get_option( 'cloudflare_email' ), get_option( 'cloudflare_key' ) );
             }
         }
         // If the updated option is 'cron_interval', reschedule the cron event
         
         if ( 'cron_interval' == $option_name ) {
             // Unschedule the previous cron event if it exists
-            wp_clear_scheduled_hook( 'wtc_check_new_blocked_ips' );
+            wp_clear_scheduled_hook( 'wtcb_check_new_blocked_ips' );
             // Schedule the cron job with the new interval
             $cron_interval = get_option( 'cron_interval' );
             if ( !empty($cron_interval) ) {
-                wp_schedule_event( time(), $cron_interval, 'wtc_check_new_blocked_ips' );
+                wp_schedule_event( time(), $cron_interval, 'wtcb_check_new_blocked_ips' );
             }
         }
     
@@ -514,33 +482,33 @@ if ( function_exists( 'wor_fs' ) ) {
     
     add_action( 'updated_option', 'update_wp_config_on_save' );
     // The function that will run when the plugin is activated
-    function wtc_activate()
+    function wtcb_activate()
     {
         // Unschedule the previous cron event if it exists
-        wp_clear_scheduled_hook( 'wtc_check_new_blocked_ips' );
+        wp_clear_scheduled_hook( 'wtcb_check_new_blocked_ips' );
         // Schedule the cron job with the new interval
         $cron_interval = get_option( 'cron_interval' );
         if ( !empty($cron_interval) ) {
-            wp_schedule_event( time(), $cron_interval, 'wtc_check_new_blocked_ips' );
+            wp_schedule_event( time(), $cron_interval, 'wtcb_check_new_blocked_ips' );
         }
         // Schedule the function to run every 5 minutes
-        //if (!wp_next_scheduled('wtc_check_new_blocked_ips')) {
-        //	wp_schedule_event(time(), '5min', 'wtc_check_new_blocked_ips');
+        //if (!wp_next_scheduled('wtcb_check_new_blocked_ips')) {
+        //	wp_schedule_event(time(), '5min', 'wtcb_check_new_blocked_ips');
         //}
     }
     
     // Hook into the activation of the plugin
-    register_activation_hook( __FILE__, 'wtc_activate' );
-    // Hook into the 'wtc_add_ips_to_cloudflare' action that'll fire according to the cron schedule
-    //add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
-    add_action( 'wtc_check_new_blocked_ips', 'wtc_check_new_blocked_ips' );
+    register_activation_hook( __FILE__, 'wtcb_activate' );
+    // Hook into the 'wtcb_add_ips_to_cloudflare' action that'll fire according to the cron schedule
+    //add_action('wtcb_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
+    add_action( 'wtcb_check_new_blocked_ips', 'wtcb_check_new_blocked_ips' );
     // Create a function to check new blocked IPs every 5 minutes
-    function wtc_check_new_blocked_ips()
+    function wtcb_check_new_blocked_ips()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
         $threshold = get_option( 'blocked_hits_threshold', 0 );
-        $last_processed_time = get_option( 'wtc_last_processed_time', 0 );
+        $last_processed_time = get_option( 'wtcb_last_processed_time', 0 );
         // Default to 0 if not set
         // Convert last processed time to the same format as the blockedTime column
         $blocked_ips = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE isSent = 0", OBJECT );
@@ -564,10 +532,10 @@ if ( function_exists( 'wor_fs' ) ) {
         if ( $blocked_ips ) {
             error_log( "Blocked IPs: " . print_r( $blocked_ips, true ) );
             // Debug statement
-            wtc_add_ips_to_cloudflare( $blocked_ips );
+            wtcb_add_ips_to_cloudflare( $blocked_ips );
             // Pass $blocked_ips as an argument
-            update_option( 'wtc_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
-            update_option( 'wtc_processed_ips_count', $processed_ips_count );
+            update_option( 'wtcb_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
+            update_option( 'wtcb_processed_ips_count', $processed_ips_count );
         } else {
             error_log( "No New Blocked IPs Found" );
         }
@@ -576,10 +544,10 @@ if ( function_exists( 'wor_fs' ) ) {
     
     // Add the blocked IPs to Cloudflare
     // Add IPs to Cloudflare
-    function wtc_add_ips_to_cloudflare()
+    function wtcb_add_ips_to_cloudflare()
     {
         global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+        $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
         $email = get_option( 'cloudflare_email' );
         $key = get_option( 'cloudflare_key' );
         $block_scope = get_option( 'block_scope', 'domain' );
@@ -632,7 +600,7 @@ if ( function_exists( 'wor_fs' ) ) {
                     if ( $responseCode == '10009' && $responseMessage == 'firewallaccessrules.api.duplicate_of_existing' ) {
                         // You can use the response code as needed
                         error_log( 'Response Duplicated Code: ' . $responseCode );
-                        wtc_update_cloudflare_response( $ip->id, $response['body'] );
+                        wtcb_update_cloudflare_response( $ip->id, $response['body'] );
                         // Mark IP as sent
                         $wpdb->update(
                             $table_name,
@@ -647,7 +615,7 @@ if ( function_exists( 'wor_fs' ) ) {
                         );
                         $abuseipdb_account_id = get_option( 'abuseipdb_api_id' );
                         if ( !empty($abuseipdb_account_id) ) {
-                            wtc_getipinfo( $ip_address );
+                            wtcb_getipinfo( $ip_address );
                         }
                         continue;
                     } elseif ( $responseCode != '10009' && $responseMessage != 'firewallaccessrules.api.duplicate_of_existing' ) {
@@ -657,10 +625,10 @@ if ( function_exists( 'wor_fs' ) ) {
                 
                 }
                 
-                wtc_update_cloudflare_response( $ip->id, $response['body'] );
+                wtcb_update_cloudflare_response( $ip->id, $response['body'] );
                 $abuseipdb_account_id = get_option( 'abuseipdb_api_id' );
                 if ( !empty($abuseipdb_account_id) ) {
-                    wtc_getipinfo( $ip_address );
+                    wtcb_getipinfo( $ip_address );
                 }
                 // Mark IP as sent
                 $wpdb->update(
@@ -679,72 +647,71 @@ if ( function_exists( 'wor_fs' ) ) {
     
     }
     
-    //add_action('wtc_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
-    function wtc_getipinfo( $ip_address )
-    {
-        global  $wpdb ;
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $abuseipdb_account_id = get_option( 'abuseipdb_api_id' );
-        $email = get_option( 'cloudflare_email' );
-        $key = get_option( 'cloudflare_key' );
-        $curl = curl_init();
-        error_log( "IP info : " . $ip_address );
-        $maxAgeInDays = '365';
-        $curl = curl_init();
-        curl_setopt_array( $curl, [
-            CURLOPT_URL            => "https://api.abuseipdb.com/api/v2/check?ipAddress={$ip_address}&maxAgeInDays={$maxAgeInDays}",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING       => "",
-            CURLOPT_MAXREDIRS      => 10,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST  => "GET",
-            CURLOPT_HTTPHEADER     => [ "Accept: application/json", "Key: {$abuseipdb_account_id}" ],
-        ] );
-        $response = curl_exec( $curl );
-        $err = curl_error( $curl );
-        curl_close( $curl );
-        
-        if ( $err ) {
-            error_log( "cURL Error #:" . $err );
-        } else {
-            error_log( $response );
-            $ipDetails = json_decode( $response, true );
-            error_log( print_r( $ipDetails, true ) );
-            error_log( print_r( $ipDetails['data']['abuseConfidenceScore'], true ) );
-            $countrycode = $ipDetails['data']['countryCode'];
-            $score = $ipDetails['data']['abuseConfidenceScore'];
-            $isp = $ipDetails['data']['isp'];
-            $usageType = $ipDetails['data']['usageType'];
-            // Mark IP as sent
-            $wpdb->update(
-                $table_name,
-                array(
-                    'countryCode'     => $countrycode,
-                    'confidenceScore' => $score,
-                    'isp'             => $isp,
-                    'usageType'       => $usageType,
-                ),
-                array(
-                    'ip' => $ip_address,
-                ),
-                array( '%s' ),
-                // Data format
-                array( '%s' )
-            );
-        }
+    //add_action('wtcb_add_ips_to_cloudflare', 'add_ips_to_cloudflare');
+    function wtcb_getipinfo( $ip_address ) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+    $abuseipdb_account_id = get_option('abuseipdb_api_id');
     
+    // Prepare the request headers for the HTTP API call
+    $headers = [
+        'headers' => [
+            'Accept' => 'application/json',
+            'Key'    => $abuseipdb_account_id,
+        ],
+        'timeout' => 30,
+    ];
+
+    // Setup the request URL with the IP address and maximum age for the data
+    $maxAgeInDays = '365';
+    $request_url = "https://api.abuseipdb.com/api/v2/check?ipAddress={$ip_address}&maxAgeInDays={$maxAgeInDays}";
+
+    // Make the HTTP GET request to the AbuseIPDB API
+    $response = wp_remote_get($request_url, $headers);
+
+    // Check for errors in the response
+    if (is_wp_error($response)) {
+        error_log("HTTP Request Error: " . $response->get_error_message());
+    } else {
+        $body = wp_remote_retrieve_body($response);
+        error_log($body);
+
+        // Decode the response body and log the details
+        $ipDetails = json_decode($body, true);
+        error_log(print_r($ipDetails, true));
+
+        // Extract the details from the response
+        $countrycode = $ipDetails['data']['countryCode'];
+        $score = $ipDetails['data']['abuseConfidenceScore'];
+        $isp = $ipDetails['data']['isp'];
+        $usageType = $ipDetails['data']['usageType'];
+
+        // Update the database record for the IP address with the new details
+        $wpdb->update(
+            $table_name,
+            [
+                'countryCode'     => $countrycode,
+                'confidenceScore' => $score,
+                'isp'             => $isp,
+                'usageType'       => $usageType,
+            ],
+            ['ip' => $ip_address],
+            ['%s', '%d', '%s', '%s'], // Data format for country code, score, ISP, and usage type
+            ['%s'] // Where format for IP address
+        );
     }
+}
+
     
-    function wtc_run_process_manually()
+    function wtcb_run_process_manually()
     {
         
-        if ( isset( $_POST['wtc_run_process'] ) ) {
+        if ( isset( $_POST['wtcb_run_process'] ) ) {
             global  $wpdb ;
-            wtc_fetch_and_store_blocked_ips();
-            $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+            wtcb_fetch_and_store_blocked_ips();
+            $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
             $threshold = get_option( 'blocked_hits_threshold', 0 );
-            $last_processed_time = get_option( 'wtc_last_processed_time', 0 );
+            $last_processed_time = get_option( 'wtcb_last_processed_time', 0 );
             // Default to 0 if not set
             // Convert last processed time to the same format as the blockedTime column
             $blocked_ips = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE isSent = 0", OBJECT );
@@ -764,10 +731,10 @@ if ( function_exists( 'wor_fs' ) ) {
             if ( $blocked_ips ) {
                 error_log( "Blocked IPs: " . print_r( $blocked_ips, true ) );
                 // Debug statement
-                wtc_add_ips_to_cloudflare( $blocked_ips );
+                wtcb_add_ips_to_cloudflare( $blocked_ips );
                 // Pass $blocked_ips as an argument
-                update_option( 'wtc_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
-                update_option( 'wtc_processed_ips_count', $processed_ips_count );
+                update_option( 'wtcb_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
+                update_option( 'wtcb_processed_ips_count', $processed_ips_count );
             } else {
                 error_log( "No New Blocked IPs Found - Manual Process" );
             }
@@ -779,19 +746,19 @@ if ( function_exists( 'wor_fs' ) ) {
     
     }
     
-    add_action( 'admin_post_wtc_run_process', 'wtc_run_process_manually' );
+    add_action( 'admin_post_wtcb_run_process', 'wtcb_run_process_manually' );
     // The function that will run when the plugin is deactivated
-    function wtc_deactivate()
+    function wtcb_deactivate()
     {
         // Unschedule the function from running every 5 minutes
-        $scheduled_timestamp = wp_next_scheduled( 'wtc_check_new_blocked_ips' );
+        $scheduled_timestamp = wp_next_scheduled( 'wtcb_check_new_blocked_ips' );
         if ( $scheduled_timestamp ) {
-            wp_unschedule_event( $scheduled_timestamp, 'wtc_check_new_blocked_ips' );
+            wp_unschedule_event( $scheduled_timestamp, 'wtcb_check_new_blocked_ips' );
         }
     }
     
-    register_deactivation_hook( __FILE__, 'wtc_deactivate' );
-    function wtc_update_wp_config( $cloudflare_email, $cloudflare_key )
+    register_deactivation_hook( __FILE__, 'wtcb_deactivate' );
+    function wtcb_update_wp_config( $cloudflare_email, $cloudflare_key )
     {
         // Config file path
         $config_file = ABSPATH . 'wp-config.php';
@@ -823,7 +790,7 @@ if ( function_exists( 'wor_fs' ) ) {
     }
     
     // Add 5 minutes interval to cron schedules
-    function wtc_add_cron_interval( $schedules )
+    function wtcb_add_cron_interval( $schedules )
     {
         $schedules['5min'] = array(
             'interval' => 5 * 60,
@@ -832,201 +799,164 @@ if ( function_exists( 'wor_fs' ) ) {
         return $schedules;
     }
     
-    add_filter( 'cron_schedules', 'wtc_add_cron_interval' );
-    function wtc_enqueue_scripts()
+    add_filter( 'cron_schedules', 'wtcb_add_cron_interval' );
+    function wtcb_enqueue_scripts()
     {
         // Enqueue jQuery
         wp_enqueue_script( 'jquery' );
         // Enqueue DataTables library
-        wp_enqueue_script(
-            'wtc-datatables',
-            'https://cdn.datatables.net/v/bs5/dt-1.11.3/datatables.min.js',
-            array( 'jquery' ),
-            '1.11.3'
-        );
-        // Enqueue DataTables CSS
-        wp_enqueue_style(
-            'wtc-datatables-css',
-            'https://cdn.datatables.net/v/bs5/dt-1.11.3/datatables.min.css',
-            array(),
-            '1.11.3'
-        );
+        // Enqueue the DataTables CSS file.
+        wp_enqueue_style('datatables-css', plugins_url('css/datatables.min.css', __FILE__), array(), '1.11.3');
+        
+        // Enqueue the DataTables JavaScript file.
+        wp_enqueue_script('datatables-js', plugins_url('js/datatables.min.js', __FILE__), array('jquery'), '1.11.3', true);
+
     }
     
-    add_action( 'admin_enqueue_scripts', 'wtc_enqueue_scripts' );
-    function wtc_delete_ips()
-    {
-        global  $wpdb ;
-        check_ajax_referer( 'wtc_ips_tab_action', 'wtc_ips_tab_nonce' );
-        if ( !current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( 'Access is not allowed.' );
-        }
-        $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-        $ids = $_POST['ids'];
-        // Ensure $ids are integers only
-        $ids = array_map( 'intval', $ids );
-        $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-        $query = "DELETE FROM {$table_name} WHERE id IN ({$placeholders})";
-        // Delete the selected IPs
-        $wpdb->query( $wpdb->prepare( $query, ...$ids ) );
-        wp_send_json_success( 'Selected records deleted successfully.' );
+    add_action( 'admin_enqueue_scripts', 'wtcb_enqueue_scripts' );
+    function wtcb_delete_ips() {
+		global $wpdb;
+		check_ajax_referer('wtcb_ips_tab_action', 'wtcb_ips_tab_nonce');
+		if (!current_user_can('manage_options')) {
+			wp_send_json_error('Access is not allowed.'); 
+		}
+		$table_name = $wpdb->prefix . 'wtcb_blocked_ips';
+        $ids = isset($_POST['ids']) ? (array) $_POST['ids'] : []; 
+		$ids = array_map('absint', $ids); 
+        if (count($ids) > 0) { 
+        $placeholders = implode(',', array_fill(0, count($ids), '%d')); 
+        
+        // Use prepare to ensure safe SQL execution
+        $query = $wpdb->prepare("DELETE FROM {$table_name} WHERE id IN ($placeholders)", ...$ids); 
+        
+        // Execute the query
+        $wpdb->query($query); 
+        wp_send_json_success('Selected records deleted successfully.'); 
+		} else {
+			wp_send_json_error('No valid IDs provided for deletion.'); 
+		}
+
     }
     
-    add_action( 'wp_ajax_wtc_delete_ips', 'wtc_delete_ips' );
+    add_action( 'wp_ajax_wtcb_delete_ips', 'wtcb_delete_ips' );
     // Callback for deleting IPs from Cloudflare
-    function wtc_delete_ips_cloudflare()
-    {
-        // Verify the nonce before processing the request
-        check_ajax_referer( 'wtc_ips_tab_action', 'wtc_ips_tab_nonce' );
-        
-        if ( !current_user_can( 'manage_options' ) || empty($_POST['ips']) ) {
-            wp_send_json_error( [
-                'type'    => 'error',
-                'message' => 'Invalid request data.',
-            ] );
-            wp_die();
-        }
-        
-        $cf_zone_id = get_option( 'cloudflare_zone_id' );
-        $cf_account_id = get_option( 'cloudflare_account_id' );
-        $cf_api_key = get_option( 'cloudflare_key' );
-        $cf_email = get_option( 'cloudflare_email' );
-        error_log( "API Key: {$cf_api_key}, Email: {$cf_email}, Zone ID: {$cf_zone_id}" );
-        
-        if ( !$cf_zone_id || !$cf_api_key || !$cf_email ) {
-            wp_send_json_error( [
-                'type'    => 'error',
-                'message' => 'Cloudflare credentials are not set.',
-            ] );
-            wp_die();
-        }
-        
-        $ips_to_delete = $_POST['ips'];
-        $deleted_ips = [];
-        foreach ( $ips_to_delete as $ip ) {
-            $api_url = "https://api.cloudflare.com/client/v4/zones/{$cf_zone_id}/firewall/access_rules/rules?configuration.value={$ip}";
-            $headers = [ "Content-Type: application/json", "X-Auth-Email: {$cf_email}", "X-Auth-Key: {$cf_api_key}" ];
-            // Get all IP access rules from Cloudflare
-            $curl = curl_init();
-            curl_setopt_array( $curl, [
-                CURLOPT_URL            => $api_url,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING       => "",
-                CURLOPT_MAXREDIRS      => 10,
-                CURLOPT_TIMEOUT        => 30,
-                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST  => "GET",
-                CURLOPT_HTTPHEADER     => $headers,
-            ] );
-            $response = curl_exec( $curl );
-            $err = curl_error( $curl );
-            curl_close( $curl );
-            
-            if ( $err ) {
-                $error_message = "Failed to fetch IP access rules from Cloudflare for IP: {$ip} - Error: {$err}";
-                error_log( $error_message );
-                // Log the error
-                continue;
-                // Continue to the next IP
-            }
-            
-            $data = json_decode( $response, true );
-            // Log the data received from Cloudflare
-            error_log( "Data received from Cloudflare for IP: {$ip}" );
-            error_log( print_r( $data, true ) );
-            
-            if ( empty($data['result']) ) {
-                $error_message = "No matching IP access rule found in Cloudflare for IP: {$ip}";
-                error_log( $error_message );
-                // Log the error
-                continue;
-                // Continue to the next IP
-            }
-            
-            $matchedRuleId = $data['result'][0]['id'];
-            $matchedRuleType = $data['result'][0]['scope']['type'];
-            error_log( "Matched Rule ID: " . $matchedRuleId );
-            error_log( "Matched Rule Type: " . $matchedRuleType );
-            // Delete the matched IP rule from Cloudflare
-            
-            if ( $matchedRuleType == 'zone' ) {
-                $delete_url = "https://api.cloudflare.com/client/v4/zones/{$cf_zone_id}/firewall/access_rules/rules/{$matchedRuleId}";
-            } else {
-                $delete_url = "https://api.cloudflare.com/client/v4/accounts/{$cf_account_id}/firewall/access_rules/rules/{$matchedRuleId}";
-            }
-            
-            $curl = curl_init();
-            curl_setopt_array( $curl, [
-                CURLOPT_URL            => $delete_url,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_CUSTOMREQUEST  => "DELETE",
-                CURLOPT_HTTPHEADER     => $headers,
-            ] );
-            $delete_response = curl_exec( $curl );
-            $delete_err = curl_error( $curl );
-            curl_close( $curl );
-            
-            if ( $delete_err ) {
-                $error_message = "Failed to delete IP access rule for IP: {$ip} from Cloudflare - Error: {$delete_err}";
-                error_log( $error_message );
-                // Log the error
-                continue;
-                // Continue to the next IP
-            }
-            
-            $delete_data = json_decode( $delete_response, true );
-            error_log( "Data received from Delete Cloudflare for IP: {$ip}" );
-            error_log( print_r( $delete_data, true ) );
-            foreach ( $delete_data['messages'] as $error ) {
-                error_log( "Error Message: " . $error );
-                // Log the error
-            }
-            
-            if ( !empty($delete_data['success']) && $delete_data['success'] === true ) {
-                $deleted_ips[] = $ip;
-                $ids = $ip;
-                global  $wpdb ;
-                $table_name = $wpdb->prefix . 'wtc_blocked_ips';
-                // Delete the selected IPs
-                $wpdb->query( $wpdb->prepare( "DELETE FROM {$table_name} WHERE ip like '%{$ip}%'" ) );
-            } else {
-                $error_message = "Failed to delete IP access rule for IP: {$ip} from Cloudflare. Response: " . print_r( $delete_data, true );
-                error_log( $error_message );
-                // Log the error
-            }
-        
-        }
-        // If there were deleted IPs, send the response
-        
-        if ( !empty($deleted_ips) ) {
-            wp_send_json_success( [
-                'type'        => 'success',
-                'message'     => 'IPs deleted successfully from Cloudflare.',
-                'deleted_ips' => $deleted_ips,
-            ] );
-        } else {
-            wp_send_json_error( [
-                'type'    => 'error',
-                'message' => 'No valid IP access rules were deleted from Cloudflare.',
-            ] );
-        }
-        
-        wp_die();
+    function wtcb_delete_ips_cloudflare() {
+		// Verify the nonce before processing the request
+		check_ajax_referer('wtcb_ips_tab_action', 'wtcb_ips_tab_nonce');
+
+		if (!current_user_can('manage_options') || empty($_POST['ips'])) {
+			wp_send_json_error([
+				'type'    => 'error',
+				'message' => 'Invalid request data.',
+			]);
+			wp_die();
+		}
+
+		$cf_zone_id = get_option('cloudflare_zone_id');
+		$cf_account_id = get_option('cloudflare_account_id');
+		$cf_api_key = get_option('cloudflare_key');
+		$cf_email = get_option('cloudflare_email');
+		error_log("API Key: {$cf_api_key}, Email: {$cf_email}, Zone ID: {$cf_zone_id}");
+
+		if (!$cf_zone_id || !$cf_api_key || !$cf_email) {
+			wp_send_json_error([
+				'type'    => 'error',
+				'message' => 'Cloudflare credentials are not set.',
+			]);
+			wp_die();
+		}
+
+		$ips_to_delete = $_POST['ips'];
+		$deleted_ips = [];
+		$headers = [
+			'headers' => [
+				'Content-Type'  => 'application/json',
+				'X-Auth-Email'  => $cf_email,
+				'X-Auth-Key'    => $cf_api_key,
+			],
+			'timeout' => 30,
+		];
+
+		foreach ($ips_to_delete as $ip) {
+			$api_url = "https://api.cloudflare.com/client/v4/zones/{$cf_zone_id}/firewall/access_rules/rules?configuration.value={$ip}";
+			
+			// Use wp_remote_get for GET requests
+			$response = wp_remote_get($api_url, $headers);
+
+			if (is_wp_error($response)) {
+				error_log("Failed to fetch IP access rules from Cloudflare for IP: {$ip} - Error: " . $response->get_error_message());
+				continue; // Skip this IP and continue with the next one
+			}
+
+			$body = wp_remote_retrieve_body($response);
+			$data = json_decode($body, true);
+
+			if (empty($data['result'])) {
+				error_log("No matching IP access rule found in Cloudflare for IP: {$ip}");
+				continue; // Skip this IP and continue with the next one
+			}
+
+			foreach ($data['result'] as $rule) {
+				$matchedRuleId = $rule['id'];
+
+				if (isset($rule['scope']) && $rule['scope']['type'] === 'zone') {
+					$delete_url = "https://api.cloudflare.com/client/v4/zones/{$cf_zone_id}/firewall/access_rules/rules/{$matchedRuleId}";
+				} else {
+					$delete_url = "https://api.cloudflare.com/client/v4/accounts/{$cf_account_id}/firewall/access_rules/rules/{$matchedRuleId}";
+				}
+
+				// Use wp_remote_request for DELETE requests
+				$delete_response = wp_remote_request($delete_url, array_merge($headers, ['method' => 'DELETE']));
+
+				if (is_wp_error($delete_response)) {
+					error_log("Failed to delete IP access rule for IP: {$ip} from Cloudflare - Error: " . $delete_response->get_error_message());
+					continue; // Skip this IP and continue with the next one
+				}
+
+				$delete_body = wp_remote_retrieve_body($delete_response);
+				$delete_data = json_decode($delete_body, true);
+
+				if (!empty($delete_data['success']) && $delete_data['success'] === true) {
+					$deleted_ips[] = $ip; // Store the deleted IP for the response
+				} else {
+					error_log("Failed to delete IP access rule for IP: {$ip} from Cloudflare. Response: " . print_r($delete_data, true));
+				}
+			}
+		}
+
+		// If there were deleted IPs, send the response
+		if (!empty($deleted_ips)) {
+			wp_send_json_success([
+				'type'        => 'success',
+				'message'     => 'IPs deleted successfully from Cloudflare.',
+				'deleted_ips' => $deleted_ips,
+			]);
+		} else {
+			wp_send_json_error([
+				'type'    => 'error',
+				'message' => 'No valid IP access rules were deleted from Cloudflare.',
+			]);
+		}
+
+		wp_die();
+	}
+
+    
+    add_action( 'wp_ajax_wtcb_delete_ips_cloudflare', 'wtcb_delete_ips_cloudflare' );
+    function wtcb_display_admin_notice() {
+    if (!isset($_GET['wtcb_notice'])) {
+        return;
+    }
+    $message = sanitize_text_field($_GET['wtcb_notice']); // Change: Sanitize the input message
+    $type = 'updated'; // Default type is 'updated'
+    
+    // Validate $_GET['wtcb_type'] to contain only 'error' or 'updated'
+    if (isset($_GET['wtcb_type']) && in_array($_GET['wtcb_type'], ['error', 'updated'], true)) { // Change: Validate 'type' against allowed values
+        $type = $_GET['wtcb_type'];
     }
     
-    add_action( 'wp_ajax_wtc_delete_ips_cloudflare', 'wtc_delete_ips_cloudflare' );
-    function wtc_display_admin_notice()
-    {
-        if ( !isset( $_GET['wtc_notice'] ) ) {
-            return;
-        }
-        $message = sanitize_text_field( $_GET['wtc_notice'] );
-        $type = ( isset( $_GET['wtc_type'] ) ? ( in_array( $_GET['wtc_type'], array( 'error', 'updated' ), true ) ? $_GET['wtc_type'] : 'updated' ) : 'updated' );
-        // Encode for output
-        $message = htmlspecialchars( $message, ENT_QUOTES, 'UTF-8' );
-        $type = htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' );
-        echo  "<div class='notice notice-{$type} is-dismissible'><p>{$message}</p></div>" ;
-    }
-    
-    add_action( 'admin_notices', 'wtc_display_admin_notice' );
+    echo "<div class='notice notice-{$type} is-dismissible'><p>" . esc_html($message) . "</p></div>"; // Change: Escape output for display
+	}
+
+	add_action('admin_notices', 'wtcb_display_admin_notice');
 }

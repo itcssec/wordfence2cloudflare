@@ -1,8 +1,8 @@
 <?php
 // Render Blocked IPs Tab Content
-function wtc_render_ips_tab_content() {
+function wtcb_render_ips_tab_content() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'wtc_blocked_ips';
+    $table_name = $wpdb->prefix . 'wtcb_blocked_ips';
 
     $ips = $wpdb->get_results("SELECT * FROM $table_name");
 
@@ -29,6 +29,7 @@ function wtc_render_ips_tab_content() {
         <tbody>
             <?php foreach ($ips as $ip) : ?>
                 <tr>
+                    <!-- Escape all the database values properly -->
                     <td><?php echo esc_html($ip->id); ?></td>
                     <td><?php echo esc_html($ip->blockedTime); ?></td>
                     <td><?php echo esc_html($ip->blockedHits); ?></td>
@@ -38,10 +39,11 @@ function wtc_render_ips_tab_content() {
                     <td><?php echo esc_html($ip->isp); ?></td>
                     <td><?php echo esc_html($ip->confidenceScore); ?></td>
                     <td><?php echo esc_html($ip->cfResponse); ?></td>
-                    <td><?php echo esc_html($ip->isSent); ?></td>
+                    <td><?php echo esc_html($ip->isSent ? 'Yes' : 'No'); ?></td>
                     <td>
-                        <input type="checkbox" class="wtc-delete-checkbox" value="<?php echo $ip->id; ?>">
-                        <input type="hidden" class="wtc-ip-address" value="<?php echo $ip->ip; ?>">
+                        <!-- Use esc_attr() for values within HTML attributes -->
+                        <input type="checkbox" class="wtc-delete-checkbox" value="<?php echo esc_attr($ip->id); ?>">
+                        <input type="hidden" class="wtc-ip-address" value="<?php echo esc_attr($ip->ip); ?>">
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -54,17 +56,17 @@ function wtc_render_ips_tab_content() {
     <?php
 }
 // Enqueue the JavaScript file for the admin page
-add_action('admin_enqueue_scripts', 'wtc_enqueue_admin_scripts');
-function wtc_enqueue_admin_scripts() {
+add_action('admin_enqueue_scripts', 'wtcb_enqueue_admin_scripts');
+function wtcb_enqueue_admin_scripts() {
     // Enqueue the DataTables library (assuming you haven't already done it)
-    wp_enqueue_script('dataTables', 'https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js', array('jquery'), '1.10.25', true);
+    wp_enqueue_script('datatables-js', plugins_url('js/datatables.min.js', __FILE__), array('jquery'), '1.11.3', true);
 
-    // Enqueue your custom script that contains the wtc_ips_tab_nonce variable
+    // Enqueue your custom script that contains the wtcb_ips_tab_nonce variable
     wp_enqueue_script('custom-script', plugin_dir_url(__FILE__) . 'js/custom-script.js', array('jquery'), '1.0', true);
 
     // Localize the nonce value to make it available in the custom script
-    wp_localize_script('custom-script', 'wtc_ajax_object', array(
+    wp_localize_script('custom-script', 'wtcb_ajax_object', array(
         'ajax_url' => admin_url('admin-ajax.php'),
-        'wtc_ips_tab_nonce' => wp_create_nonce('wtc_ips_tab_action')
+        'wtcb_ips_tab_nonce' => wp_create_nonce('wtcb_ips_tab_action')
     ));
 }
