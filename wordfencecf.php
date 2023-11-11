@@ -417,8 +417,8 @@ if ( function_exists( 'wor_fs' ) ) {
     {
         
         if ( isset( $_POST['wtcb_clear_data'] ) && check_admin_referer( 'wtcb_clear_data_action', 'wtcb_clear_data_nonce' ) ) {
-            delete_option( 'wtcb_last_processed_time' );
-            delete_option( 'wtcb_processed_ips_count' );
+            delete_option( 'wtc_last_processed_time' );
+            delete_option( 'wtc_processed_ips_count' );
             wp_redirect( admin_url( 'admin.php?page=wtc-settings' ) );
             exit;
         }
@@ -508,7 +508,7 @@ if ( function_exists( 'wor_fs' ) ) {
         global  $wpdb ;
         $table_name = $wpdb->prefix . 'wtc_blocked_ips';
         $threshold = get_option( 'blocked_hits_threshold', 0 );
-        $last_processed_time = get_option( 'wtcb_last_processed_time', 0 );
+        $last_processed_time = get_option( 'wtc_last_processed_time', 0 );
         // Default to 0 if not set
         // Convert last processed time to the same format as the blockedTime column
         $blocked_ips = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE isSent = 0", OBJECT );
@@ -534,8 +534,8 @@ if ( function_exists( 'wor_fs' ) ) {
             // Debug statement
             wtcb_add_ips_to_cloudflare( $blocked_ips );
             // Pass $blocked_ips as an argument
-            update_option( 'wtcb_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
-            update_option( 'wtcb_processed_ips_count', $processed_ips_count );
+            update_option( 'wtc_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
+            update_option( 'wtc_processed_ips_count', $processed_ips_count );
         } else {
             error_log( "No New Blocked IPs Found" );
         }
@@ -711,7 +711,7 @@ if ( function_exists( 'wor_fs' ) ) {
             wtcb_fetch_and_store_blocked_ips();
             $table_name = $wpdb->prefix . 'wtc_blocked_ips';
             $threshold = get_option( 'blocked_hits_threshold', 0 );
-            $last_processed_time = get_option( 'wtcb_last_processed_time', 0 );
+            $last_processed_time = get_option( 'wtc_last_processed_time', 0 );
             // Default to 0 if not set
             // Convert last processed time to the same format as the blockedTime column
             $blocked_ips = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE isSent = 0", OBJECT );
@@ -733,8 +733,8 @@ if ( function_exists( 'wor_fs' ) ) {
                 // Debug statement
                 wtcb_add_ips_to_cloudflare( $blocked_ips );
                 // Pass $blocked_ips as an argument
-                update_option( 'wtcb_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
-                update_option( 'wtcb_processed_ips_count', $processed_ips_count );
+                update_option( 'wtc_last_processed_time', $current_date->format( 'Y-m-d H:i:s' ) );
+                update_option( 'wtc_processed_ips_count', $processed_ips_count );
             } else {
                 error_log( "No New Blocked IPs Found - Manual Process" );
             }
